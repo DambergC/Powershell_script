@@ -1,4 +1,8 @@
-# Powershell_script
-Script connected to a task to automate a request for a conference in with Cisco TMS.
+# CISCOTMS
+To automate the creation of conference in Cisco TMS
+
+# ConfigMgr
+Scripts to manage MECM
+
 
 
