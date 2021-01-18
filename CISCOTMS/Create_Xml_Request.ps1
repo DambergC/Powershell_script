@@ -1,4 +1,4 @@
-﻿<#	
+<#	
     .NOTES
     ===========================================================================
     Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2020 v5.7.182
@@ -15,9 +15,13 @@
 	$url = 'https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl'
 	
 	$result = (Invoke-WebRequest -Uri $URI -InFile .\sample2.xml -ContentType 'text/xml' -Method POST)
-
-
 #>
+
+
+
+#Lista på deltagarna 
+$ParticipantList = Import-Csv c:\DV\participant.csv
+
 #Variable HEADER
 $conferenceid = '-1' # -1 skapar nytt möte
 $SendConfirmationMail = 'Boolean'
@@ -588,6 +592,13 @@ $writer.WriteStartElement("Participants")
 
 ##########################################################################################
 ##########################################################################################
+
+$ParticipantList.foreach(
+	{
+	$NameOrNumber = $($_.namn)
+	$EmailAddress = $($_.epost)
+	$ParticipantCallType = 'IP Video'
+
 #Start Participant
 $writer.WriteStartElement("Participant")
 
@@ -612,7 +623,9 @@ $writer.WriteString("$ParticipantCallType")
 $writer.WriteEndElement()
 
 #end Participant
-$writer.WriteEndElement()
+	$writer.WriteEndElement()
+	}
+)
 ##########################################################################################
 
 #end Participants
