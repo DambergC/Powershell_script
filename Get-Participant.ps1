@@ -8,7 +8,7 @@
 	 Filename:     	Get-Participant.ps1
 	===========================================================================
 	.DESCRIPTION
-		Collect name of participant and the email and generate a particioant.csv
+		Collect name of participant and the email and generate a participant.csv
 		which is used to create the xml for Cisco TMS.
 
 		Supports multi numbers of participant.
