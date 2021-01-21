@@ -129,7 +129,7 @@ $TransactionId = 'long'
 
 ##########################################################################################
 # Path for XML output
-$XMLpath = 'c:\DV\testfile_request.xml'
+$XMLpath = 'c:\DV\REQUEST.xml'
 ##########################################################################################
 
 ##########################################################################################
@@ -141,8 +141,10 @@ $writer.Indentation = 2
 ##########################################################################################
 	
 	
+
+
+
 # Write start of XML document - REQUEST
-	
 $writer.WriteStartDocument()
 	
 #start envelope
@@ -808,3 +810,5 @@ $writer.WriteEndElement()
 $writer.WriteEndElement()
 $writer.Flush()
 $writer.Close()
+
+Get-Content .\post_header.xml, .\REQUEST.xml | Set-Content Final_RequestFile.xml
