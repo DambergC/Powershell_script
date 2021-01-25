@@ -4,7 +4,7 @@
 	 Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2020 v5.7.182
 	 Created on:   	1/17/2021 1:50 PM
 	 Created by:   	Christian Damberg
-	 Organization: 	Cygate AB
+	 Organization: 	Cygate AB.
 	 Filename:     	Get-Participant.ps1
 	===========================================================================
 	.DESCRIPTION
