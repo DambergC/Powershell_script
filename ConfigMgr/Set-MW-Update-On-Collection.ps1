@@ -3,7 +3,7 @@
 	===========================================================================
 	 Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2020 v5.7.182
 	 Created on:   	1/18/2021 1:08 PM
-	 Created by:   	Christian Damberg
+	 Created by:   	Christian Damberg.
 	 Organization: 	Cygate AB
 	 Filename:     	Set-MW-Update-On-Collection.ps1
 	===========================================================================
