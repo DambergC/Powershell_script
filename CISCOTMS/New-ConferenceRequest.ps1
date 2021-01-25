@@ -5,7 +5,7 @@
     Created on:   	1/12/2021 10:42 AM
     Created by:   	Christian Damberg
     Organization: 	Cygate AB
-    Filename:     	Create-Xml_Request.ps1
+    Filename:     	New-ConferenceRequest.ps1
     ===========================================================================
     .DESCRIPTION
     This script creats an xml for sending a request to CISCO TNS
