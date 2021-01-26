@@ -20,7 +20,7 @@
 
 
 #Lista på deltagarna 
-$ParticipantList = Import-Csv c:\DV\participant.csv
+$ParticipantList = Import-Csv .\participant.csv
 
 #Variable HEADER
 $conferenceid = '-1' # -1 skapar nytt möte
@@ -597,8 +597,8 @@ $writer.WriteStartElement("Participants")
 
 $ParticipantList.foreach(
 	{
-	$NameOrNumber = $($_.namn)
-	$EmailAddress = $($_.epost)
+	$NameOrNumber = $($_.Participant)
+	$EmailAddress = $($_.email)
 	$ParticipantCallType = 'IP Video'
 
 #Start Participant
