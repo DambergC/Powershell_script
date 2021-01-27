@@ -16,7 +16,7 @@
 
 
 # Path to whre the csv-file should be generated 
-$csvfile = 'c:\dv\participant.csv'
+$csvfile = '.\participant.csv'
 
 # If file exist and it already contains data this command will clear the file
 Clear-Content $csvfile

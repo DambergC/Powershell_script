@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Header>
+    <ContextHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <SendConfirmationMail>Boolean</SendConfirmationMail>
+      <ExcludeConferenceInformation>string</ExcludeConferenceInformation>
+      <ClientLanguage>string</ClientLanguage>
+    </ContextHeader>
+    <ExternalAPIVersionSoapHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ClientVersionIn>int</ClientVersionIn>
+      <ClientIdentifierIn>string</ClientIdentifierIn>
+      <ClientLatestNamespaceIn>String</ClientLatestNamespaceIn>
+      <NewServiceURL>string</NewServiceURL>
+      <ClientSession />
+    </ExternalAPIVersionSoapHeader>
+  </soap12:Header>
+  <soap12:Body>
+    <DeleteConferenceById xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ConferenceID>445</ConferenceID>
+    </DeleteConferenceById>
+  </soap12:Body>
+</soap12:Envelope>

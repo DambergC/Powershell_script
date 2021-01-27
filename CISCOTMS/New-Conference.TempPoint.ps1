@@ -20,7 +20,7 @@
 
 
 #Lista på deltagarna 
-$ParticipantList = Import-Csv c:\DV\participant.csv
+$ParticipantList = Import-Csv .\participant.csv
 
 #Variable HEADER
 $conferenceid = '-1' # -1 skapar nytt möte
@@ -129,7 +129,7 @@ $TransactionId = 'long'
 
 ##########################################################################################
 # Path for XML output
-$XMLpath = 'c:\DV\REQUEST.xml'
+$XMLpath = .\REQUEST.xml
 ##########################################################################################
 
 ##########################################################################################
@@ -597,8 +597,8 @@ $writer.WriteStartElement("Participants")
 
 $ParticipantList.foreach(
 	{
-	$NameOrNumber = $($_.namn)
-	$EmailAddress = $($_.epost)
+	$NameOrNumber = $($_.Participant)
+	$EmailAddress = $($_.email)
 	$ParticipantCallType = 'IP Video'
 
 #Start Participant
@@ -811,4 +811,4 @@ $writer.WriteEndElement()
 $writer.Flush()
 $writer.Close()
 
-Get-Content .\post_header.xml, .\REQUEST.xml | Set-Content Final_RequestFile.xml
+Get-Content .\POST_HEADER.xml .\REQUEST.xml | Set-Content .\Final_RequestFile.xml
