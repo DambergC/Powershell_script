@@ -18,7 +18,7 @@
 		===========================================================================
 		Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2021 v5.8.183
 		Created on:   	1/27/2021 08:35 AM
-		Updated on:		1/27/2021 08:35 AM
+		Updated on:	1/27/2021 08:35 AM
 		Created by:   	Christian Damberg
 		Organization: 	Cygate AB
 		Filename:     	Delete-Conference.ps1
@@ -32,7 +32,7 @@ param
 
 
 #Variable HEADER
-#$conferenceid = '-1' # -1 skapar nytt möte
+#$conferenceid = '-1' # -1 skapar nytt mÃ¶te
 $SendConfirmationMail = 'Boolean'
 $ExcludeConferenceInformation = 'string'
 $ClientLanguage = 'string'
