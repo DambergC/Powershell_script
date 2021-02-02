@@ -25,10 +25,10 @@ $ParticipantList = Import-Csv .\participant.csv -Encoding UTF8
 
 #Variable HEADER
 $conferenceid = '-1' # -1 skapar nytt möte
-$SendConfirmationMail = 'Boolean'
-$ExcludeConferenceInformation = 'string'
-$ClientLanguage = 'string'
-$ClientVersionIn = 'int'
+$SendConfirmationMail = 'false'
+$ExcludeConferenceInformation = 'false'
+$ClientLanguage = 'en'
+$ClientVersionIn = '15'
 $ClientIdentifierIn = 'string'
 $ClientLatestNamespaceIn = 'String'
 $NewServiceURL = 'string'
@@ -41,7 +41,7 @@ $EndTimeUTC = 'string'
 $RecurrenceInstanceIdUTC = 'string'
 $RecurrenceInstanceType = 'string'
 $FirstOccurrenceRecInstanceIdUTC = 'string'
-$FrequencyType = 'Daily or DailyWeekday or Weekly or Monthly or Yearly or Secondly or Minutely or Hourly or Default'
+$FrequencyType = 'Default'
 $Interval = 'int'
 
 #dayofweek finns det två rader för... multipla värden?
@@ -50,27 +50,27 @@ $DayOfWeek = 'Sunday or Monday or Tuesday or Wednesday or Thursday or Friday or 
 $FirstDayOfWeek = 'Sunday or Monday or Tuesday or Wednesday or Thursday or Friday or Saturday'
 $BySetPosition = 'int'
 $ByMonthDay = 'integer'
-$PatternEndType = 'EndByDate or EndByInstances or EndNever or Default'
+$PatternEndType = 'Default'
 $PatternEndDateUTC = 'String'
 $FirstOccurrenceRecInstanceIdUTC = 'string'
 $PatternInstances = 'int'
-$OwnerId = 'long'
-$OwnerUserName = 'string'
-$OwnerFirstName = 'string'
-$OwnerLastName = 'string'
-$OwnerEmailAddress = 'string'
-$ConferenceType = 'Reservation Only or Automatic Call Launch or Manual Call Launch or Default or Ad-Hoc conference or One Button To Push or No Connect'
-$Bandwidth = '1b/64kbps or 2b/128kbps or 3b/192kbps or 4b/256kbps or 5b/320kbps or 6b/384kbps or 8b/512kbps or 12b/768kbps or 18b/1152kbps or 23b/1472kbps or 30b/1920kbps or 32b/2048kbps or 48b/3072kbps or 64b/4096kbps or 7b/448kbps or 40b/2560kbps or 96b/6144kbps or Max or 6000kbps or Default'
-$PictureMode = 'Continuous Presence or Enhanced CP or Voice Switched or Default'
-$Encrypted = 'Yes or No or If Possible or Default'
-$DataConference = 'Yes or No or If Possible or Default'
-$DataConference = 'Yes or No or Default or AutomaticBestEffort'
+$OwnerId = '16387'
+$OwnerUserName = 'cygateviscom\tms-api.test'
+$OwnerFirstName = 'TEST-API'
+$OwnerLastName = 'Test'
+$OwnerEmailAddress = 'test@cygate.se'
+$ConferenceType = 'Automatic Call Launch'
+$Bandwidth = 'Default'
+$PictureMode = 'Default'
+$Encrypted = 'Default'
+$DataConference = 'Default'
+$DataConference = 'Default'
 $Password = 'string'
 $BillingCode = 'string'
 $ISDNRestrict = 'boolean'
 $MeetingKey = 'string'
 $SipUrl = 'string'
-$ElementsToExclude = 'None or MeetingPassword or HostKey or LocalCallInTollFreeNumber or GlobalCallInNumberUrl'
+$ElementsToExclude = 'None'
 $MeetingPassword = 'string'
 $JoinMeetingUrl = 'string'
 $HostMeetingUrl = 'string'
@@ -81,7 +81,7 @@ $SiteUrl = 'string'
 $UsePstn = 'boolean'
 $OwnedExternally = 'boolean'
 $DialString = 'string'
-$WebExInstanceType = 'Normal or Delete or Modify'
+$WebExInstanceType = 'Normal'
 $EmailTo = 'string'
 $ConfBundleId = 'string'
 $ConfOwnerId = 'string'
@@ -115,7 +115,7 @@ $BaseOffsetInMinutes = 'int'
 $DaylightOffsetInMinutes = 'int'
 #timezonerule
 
-$DaylightOffsetInMinutes = 'All or AllExceptDeleted or Pending or Ongoing or Finished or PendingAndOngoing or MeetingRequest or Rejected or NotSaved or Defective or Deleted'
+$DaylightOffsetInMinutes = 'All'
 $Version = 'integer'
 $Location = 'string'
 $Invitees = 'string'
@@ -225,7 +225,7 @@ $writer.WriteEndElement()
 $writer.WriteStartElement("soap12:Body")
 
 #Start SaveConference
-$writer.WriteStartElement("SaveConferenc")
+$writer.WriteStartElement("SaveConference")
 $writer.WriteAttributeString("xmlns", "http://tandberg.net/2004/02/tms/external/booking/")
 
 #ConferenceID

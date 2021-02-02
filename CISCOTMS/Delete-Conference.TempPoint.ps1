@@ -40,8 +40,8 @@ $ClientVersionIn = 'int'
 $ClientIdentifierIn = 'string'
 $ClientLatestNamespaceIn = 'String'
 $NewServiceURL = 'string'
-$ClientSession = 'string'
-$conferenceid = 'string'
+
+
 
 
 ##########################################################################################

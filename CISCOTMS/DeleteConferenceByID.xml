@@ -11,12 +11,12 @@
       <ClientIdentifierIn>string</ClientIdentifierIn>
       <ClientLatestNamespaceIn>String</ClientLatestNamespaceIn>
       <NewServiceURL>string</NewServiceURL>
-      <ClientSession />
+      <ClientSession>string</ClientSession>
     </ExternalAPIVersionSoapHeader>
   </soap12:Header>
   <soap12:Body>
     <DeleteConferenceById xmlns="http://tandberg.net/2004/02/tms/external/booking/">
-      <ConferenceID>445</ConferenceID>
+      <ConferenceID>string</ConferenceID>
     </DeleteConferenceById>
   </soap12:Body>
 </soap12:Envelope>
