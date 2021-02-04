@@ -42,11 +42,12 @@ $ClientLatestNamespaceIn = 'String'
 $NewServiceURL = 'string'
 
 
-
+$xmlfile = @()
 
 ##########################################################################################
 # Path for XML output
-$XMLpath = '.\GetDefaultConference.xml'
+$XMLpath = 'C:\GitHub\Powershell_script\CISCOTMS\RequestDefaultConference.xml'
+
 ##########################################################################################
 
 ##########################################################################################
@@ -158,6 +159,8 @@ $writer.WriteEndElement()
 $writer.WriteEndElement()
 $writer.Flush()
 $writer.Close()
+
+[xml]$xmlfile = get-content -Path $XMLpath
 
 
 
