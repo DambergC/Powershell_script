@@ -1,5 +1,6 @@
-﻿
-<# Set and encrypt credentials to file using default method #>
+# Christian Damberg
+# Cygate AB
+# 2021-02-04
 
 #$credential = Get-Credential
 #$credential.Password | ConvertFrom-SecureString | Set-Content c:\dv\scriptsencrypted_password1.txt
