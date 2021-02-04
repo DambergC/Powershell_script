@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Header>
+    <ContextHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <SendConfirmationMail>true</SendConfirmationMail>
+      <ExcludeConferenceInformation>false</ExcludeConferenceInformation>
+      <ClientLanguage>en</ClientLanguage>
+    </ContextHeader>
+    <ExternalAPIVersionSoapHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ClientVersionIn>15</ClientVersionIn>
+      <ClientIdentifierIn>string</ClientIdentifierIn>
+      <ClientLatestNamespaceIn>String</ClientLatestNamespaceIn>
+      <NewServiceURL>string</NewServiceURL>
+      <ClientSession>string</ClientSession>
+    </ExternalAPIVersionSoapHeader>
+  </soap12:Header>
+  <soap12:Body>
+    <SaveConference xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <Conference>
+        <ConferenceID>-1</ConferenceID>
+        <Title>Meeting 2/4/2021 1:31 PM</Title>
+        <StartTimeUTC>2021-02-04 12:31:00Z</StartTimeUTC>
+        <EndTimeUTC>2021-02-04 13:31:00Z</EndTimeUTC>
+        <OwnerId>16387</OwnerId>
+        <OwnerUserName>cygateviscom\tms-api.test</OwnerUserName>
+        <OwnerFirstName>TMS-API</OwnerFirstName>
+        <OwnerLastName>Test</OwnerLastName>
+        <OwnerEmailAddress>test@cygate.se</OwnerEmailAddress>
+        <ConferenceType>Automatic Call Launch</ConferenceType>
+        <Bandwidth>30b/1920kbps</Bandwidth>
+        <PictureMode>Enhanced CP</PictureMode>
+        <Encrypted>If Possible</Encrypted>
+        <DataConference>No</DataConference>
+        <ShowExtendOption>Yes</ShowExtendOption>
+        <Password>3453</Password>
+        <ISDNRestrict>false</ISDNRestrict>
+        <Participants>
+          <Participant>
+            <ParticipantId>1</ParticipantId>
+            <NameOrNumber>gurra1</NameOrNumber>
+            <EmailAddress>gurra1@epost.se</EmailAddress>
+            <ParticipantCallType>IP Video -&gt;</ParticipantCallType>
+          </Participant>
+          <Participant>
+            <ParticipantId>2</ParticipantId>
+            <NameOrNumber>gurra2</NameOrNumber>
+            <EmailAddress>gurra2@epost.se</EmailAddress>
+            <ParticipantCallType>IP Video -&gt;</ParticipantCallType>
+          </Participant>
+          <Participant>
+            <ParticipantId>3</ParticipantId>
+            <NameOrNumber>gurra3</NameOrNumber>
+            <EmailAddress>gurra3@epost.se</EmailAddress>
+            <ParticipantCallType>IP Video -&gt;</ParticipantCallType>
+          </Participant>
+        </Participants>
+      </Conference>
+    </SaveConference>
+  </soap12:Body>
+</soap12:Envelope>
