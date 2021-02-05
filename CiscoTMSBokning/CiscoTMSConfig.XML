@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ConfigTMS>
+<!--The account to be used with connecting to Cisco TMS-->
+<username>tms-api.test</username>
+<!--Path to the passwordfile created with the script New-CryptedPasswordFile.ps1 -->
+<pathPwdFile>c:\dv\tms-api.test.txt</pathPwdFile>
+<!--Path to default xml to get Transaction from Cisco TMS-->
+<PathGetTransactionXML>C:\dv\Get-TransactionID.xml</PathGetTransactionXML>
+<!--URL to Cisco TMS-->
+<pathCiscoTMSAPI>https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl</pathCiscoTMSAPI>
+<!--Path to original xml to get Default Conference values from Cisco TMS-->
+<pathDefaultConferenceXML>C:\dv\original_GetDefaultConference.xml</pathDefaultConferenceXML>
+<!--Your comment-->
+<PathParticipantList>C:\dv\participant.csv</PathParticipantList>
+<!--Path to Conferencerequest-file created by powershellscript to be sent to Cisco TMS-->
+<PathConferenceRequestOutput>c:\dv\ConfRequest.xml</PathConferenceRequestOutput>
+<!--Default Calltype for users-->
+<ParticipantCallType>IP Video -></ParticipantCallType>
+</ConfigTMS>

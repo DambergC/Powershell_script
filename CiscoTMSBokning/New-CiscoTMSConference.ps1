@@ -5,23 +5,31 @@
 #$credential = Get-Credential
 #$credential.Password | ConvertFrom-SecureString | Set-Content c:\dv\scriptsencrypted_password1.txt
 
+################################################################################################
+
+#path to configfile for script
+
+[xml]$config = Get-Content -Path C:\GitHub\Powershell_script\CiscoTMSBokning\CiscoTMSConfig.XML
+
+################################################################################################
+
 #####################################################################
 #
-# Del 1: Läs in behörigheter för Cisco TMS
+# Del 1: Import user account password from crypted file
 #
 #####################################################################
 
-#Användaren som kör mot TMS
-$username = "tms-api.test"
+#User with rights to run API on Cisco TMS
+$username = $config.ConfigTMS.username
 
-#Inläsning av lösenordet från den krypterade filen
-$encrypted = Get-Content c:\dv\scriptsencrypted_password1.txt | ConvertTo-SecureString
+#Import password from crypted passwordfile
+$encrypted = Get-Content $config.ConfigTMS.pathPwdFile | ConvertTo-SecureString
 
 #Skapar variabeln för inloggning
 $credential = New-Object System.Management.Automation.PsCredential($username, $encrypted)
 
 #sökvägen till API för Cisco TMS
-$url = 'https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl'
+$url = $config.ConfigTMS.pathCiscoTMSAPI
 
 #####################################################################
 #
@@ -30,7 +38,7 @@ $url = 'https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsd
 #####################################################################
 
 #Skicka en förfrågan om defaultvärden från Cisco TMS
-$PostRequest = (Invoke-WebRequest -Uri $url -InFile 'C:\dv\original_GetDefaultConference.xml' -ContentType 'text/xml' -Method POST -Credential $credential)
+$PostRequest = (Invoke-WebRequest -Uri $url -InFile $config.ConfigTMS.pathDefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential)
 
 #Läser in värden från förfrågan om defaultvärden
 [xml]$DefaultConfValue = $PostRequest
