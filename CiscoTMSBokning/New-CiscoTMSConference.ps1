@@ -1,3 +1,19 @@
+<#	
+	.NOTES
+	===========================================================================
+	 Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2020 v5.7.182
+	 Created on:   	02/04/2021 1:50 PM
+	 Created by:   	Christian Damberg
+	 Organization: 	Cygate AB
+	 Filename:     	New-CiscoTMSConference.ps1
+	===========================================================================
+	.DESCRIPTION
+
+#>
+
+#Requires -Version 3.0
+
+
 # Christian Damberg
 # Cygate AB
 # 2021-02-04
@@ -15,7 +31,19 @@
 
 #####################################################################
 #
-# Del 1: Import user account password from crypted file
+# Part 1: POST request for Transaction to access API with valid ClientSession
+#
+#####################################################################
+
+#Post request against API with Transaction-XML
+$PostTransaction = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $config.ConfigTMS.PathGetTransactionXML -ContentType 'text/xml' -Method POST -Credential $credential)
+
+#Read XML-response of default values to be used when POST a request for TransactionList
+[xml]$TransactionList = $PostTransaction
+
+#####################################################################
+#
+# Part 2: Import user account password from crypted file
 #
 #####################################################################
 
@@ -25,37 +53,35 @@ $username = $config.ConfigTMS.username
 #Import password from crypted passwordfile
 $encrypted = Get-Content $config.ConfigTMS.pathPwdFile | ConvertTo-SecureString
 
-#Skapar variabeln för inloggning
+#Create variable with username and password
 $credential = New-Object System.Management.Automation.PsCredential($username, $encrypted)
 
-#sökvägen till API för Cisco TMS
-$url = $config.ConfigTMS.pathCiscoTMSAPI
 
 #####################################################################
 #
-# Del 2: Skicka Request för defaultvärden för en bokning
+# Part 3: Send Request to get default conference value
 #
 #####################################################################
 
-#Skicka en förfrågan om defaultvärden från Cisco TMS
-$PostRequest = (Invoke-WebRequest -Uri $url -InFile $config.ConfigTMS.pathDefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential)
+#Post request against API with DefaultConference-XML
+$PostRequest = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $config.ConfigTMS.pathDefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential)
 
-#Läser in värden från förfrågan om defaultvärden
+#Read XML-response of default values to be used when POST a request for a Conference
 [xml]$DefaultConfValue = $PostRequest
 
-#UTV - Lista värden från default
+#List Value in console DEVELOPMENT ONLY
 $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult
 
 
 
 #####################################################################
 #
-# Del 3: Skapa en Request-xml för en bokning
+# Part 4: Create Request.xml with value from default Conference and input from CSV
 #
 #####################################################################
 
-#Deltagarlista
-$ParticipantList = Import-Csv 'C:\dv\participant.csv' -Encoding UTF8
+#Participant
+$ParticipantList = Import-Csv $config.ConfigTMS.PathParticipantList -Encoding UTF8
 
 #Variable HEADER
 $conferenceid = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ConferenceId
@@ -67,15 +93,11 @@ $ClientIdentifierIn = 'string'
 $ClientLatestNamespaceIn = 'String'
 $NewServiceURL = 'string'
 
-#variable BODY
-#$ClientSession = '87e4dcbc-79fd-4ef7-adaf-b8df6038bcb8'
+#variable BODY 
 $ClientSession = 'string'
 $Title = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Title
 $StartTimeUTC = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.StartTimeUTC
 $EndTimeUTC = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.EndTimeUTC
-
-#dayofweek finns det tvÃ¥ rader fÃ¶r... multipla vÃ¤rden?
-
 $OwnerId = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerId
 $OwnerUserName = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerUserName
 $OwnerFirstName = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerFirstName
@@ -92,7 +114,7 @@ $ISDNRestrict = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.Get
 
 ##########################################################################################
 # Path for XML output
-$XMLpath = 'c:\dv\ConfRequest.xml'
+$XMLpath = $config.ConfigTMS.PathConferenceRequestOutput
 ##########################################################################################
 
 ##########################################################################################
@@ -338,11 +360,11 @@ $writer.Close()
 
 #####################################################################
 #
-# Del 4: Skicka en request för bokning.
+# Part 5: POST Conference Request and get Response
 #
 #####################################################################
 
 
-$PostRequestNewConference = (Invoke-WebRequest -Uri $url -InFile 'C:\dv\ConfRequest.xml' -ContentType 'text/xml' -Method POST -Credential $credential)
+$PostRequestNewConference = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $config.ConfigTMS.PathConferenceRequestOutput -ContentType 'text/xml' -Method POST -Credential $credential)
 
 [xml]$ConferenceResult = $PostRequestNewConference
