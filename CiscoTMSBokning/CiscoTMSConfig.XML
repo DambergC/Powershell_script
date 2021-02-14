@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ConfigTMS>
-<!--The account to be used with connecting to Cisco TMS-->
-<username>tms-api.test</username>
-<!--Path to the passwordfile created with the script New-CryptedPasswordFile.ps1 -->
-<pathPwdFile>c:\dv\tms-api.test.txt</pathPwdFile>
-<!--Path to default xml to get Transaction from Cisco TMS-->
-<PathGetTransactionXML>C:\dv\Get-TransactionID.xml</PathGetTransactionXML>
-<!--URL to Cisco TMS-->
-<pathCiscoTMSAPI>https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl</pathCiscoTMSAPI>
-<!--Path to original xml to get Default Conference values from Cisco TMS-->
-<pathDefaultConferenceXML>C:\dv\original_GetDefaultConference.xml</pathDefaultConferenceXML>
-<!--Your comment-->
-<PathParticipantList>C:\dv\participant.csv</PathParticipantList>
-<!--Path to Conferencerequest-file created by powershellscript to be sent to Cisco TMS-->
-<PathConferenceRequestOutput>c:\dv\ConfRequest.xml</PathConferenceRequestOutput>
-<!--Default Calltype for users-->
-<ParticipantCallType>IP Video -></ParticipantCallType>
+<!--Emailsettings-->
+    <EmailTo>christian.damberg@cygate.se</EmailTo>
+    <EmailFrom>no-reply@cygate.se</EmailFrom>
+    <EmailSMTP>smtp.cygate.se</EmailSMTP>
+    <EmailSubject>Bokningsbekräftelse Bryggbokning ärendenr:</EmailSubject>
+<!--Settings for XML Accounts and API-->
+    <username>tms-api.test</username>
+    <pathPwdFile>C:\DV\scriptsencrypted_password1.txt</pathPwdFile>
+    <PathGetTransactionXML>C:\GitHub\Powershell_script\CiscoTMSBokning\Get-TransactionID.xml</PathGetTransactionXML>
+	<PathTESTHtmlOutFile>C:\GitHub\Powershell_script\CiscoTMSBokning\TestHtml.Html</PathTESTHtmlOutFile>
+    <pathCiscoTMSAPI>https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl</pathCiscoTMSAPI>
+    <pathDefaultConferenceXML>C:\GitHub\Powershell_script\CiscoTMSBokning\original_GetDefaultConference.xml</pathDefaultConferenceXML>
+    <PathParticipantList>C:\dv\participant.csv</PathParticipantList>
+    <PathConferenceRequestOutput>C:\GitHub\Powershell_script\CiscoTMSBokning\ConfRequest.xml</PathConferenceRequestOutput>
+    <ParticipantCallType>IP Video -></ParticipantCallType>
 </ConfigTMS>
