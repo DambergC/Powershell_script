@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ConfigTMS>
+<!--Emailsettings-->
+    <EmailFrom>no-reply@cygate.se</EmailFrom>
+    <EmailSMTP>smtp.cygate.se</EmailSMTP>
+    <EmailSubject>Bokningsbekräftelse Bryggbokning ärendenr:</EmailSubject>
+<!--Settings for XML Accounts and API-->
+    <pathCiscoTMSAPI>https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl</pathCiscoTMSAPI>
+    <username>tms-api.test</username>
+    <pathPwdFile>keys/cryptfile.txt</pathPwdFile>
+<!--Logfile, Testfile for html-email, xml for defaultconference and Request-XNL -->    
+    <Logfile>ConferenceBooking.log</Logfile>
+    <PathGetTransactionXML>Get-TransactionID.xml</PathGetTransactionXML>
+	<PathTESTHtmlOutFile>TestHtml.Html</PathTESTHtmlOutFile>
+    <pathDefaultConferenceXML>original_GetDefaultConference.xml</pathDefaultConferenceXML>
+    <PathConferenceRequestOutput>ConfRequest.xml</PathConferenceRequestOutput>
+<!--Settings for participants-->    
+    <ParticipantCallType>IP Video -></ParticipantCallType>
+<!--Settings for domain and phonenumbers-->
+    <Domain>IP Video -></Domain>
+    <Phonenumber>IP Video -></Phonenumber>
+    <PhonenumberINT>IP Video -></PhonenumberINT>
+</ConfigTMS>
