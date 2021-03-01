@@ -17,7 +17,7 @@
 <!--Settings for participants-->    
     <ParticipantCallType>IP Video -></ParticipantCallType>
 <!--Settings for domain and phonenumbers-->
-    <Domain>IP Video -></Domain>
-    <Phonenumber>IP Video -></Phonenumber>
-    <PhonenumberINT>IP Video -></PhonenumberINT>
+    <Domain>dom.se</Domain>
+    <Phonenumber>01012345678</Phonenumber>
+    <PhonenumberINT>+461012345678</PhonenumberINT>
 </ConfigTMS>
