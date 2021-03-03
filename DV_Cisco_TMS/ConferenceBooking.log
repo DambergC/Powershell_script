@@ -1,0 +1,24 @@
+2021/03/03 09:26:49 INFO ################# ny bokning  ###############
+2021/03/03 09:26:49 INFO Path to config: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/CiscoTMSConfig.XML
+2021/03/03 09:26:49 INFO psscriptroot: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS
+2021/03/03 09:26:49 INFO Username: tms-api.test
+2021/03/03 09:26:49 INFO path to passwordfile: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/keys/cryptfile.txt
+2021/03/03 09:26:49 INFO path to DefaultConferenceXML /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/original_GetDefaultConference.xml
+2021/03/03 09:26:50 INFO Path to Requestfile /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/ConfRequest.xml
+2021/03/03 09:26:50 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 401
+2021/03/03 09:31:46 INFO ################# ny bokning  ###############
+2021/03/03 09:31:46 INFO Path to config: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/CiscoTMSConfig.XML
+2021/03/03 09:31:46 INFO psscriptroot: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS
+2021/03/03 09:31:46 INFO Username: tms-api.test
+2021/03/03 09:31:46 INFO path to passwordfile: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/keys/cryptfile.txt
+2021/03/03 09:31:46 INFO path to DefaultConferenceXML /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/original_GetDefaultConference.xml
+2021/03/03 09:31:46 INFO Path to Requestfile /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/ConfRequest.xml
+2021/03/03 09:31:46 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 401
+2021/03/03 09:49:53 INFO ################# ny bokning  ###############
+2021/03/03 09:49:53 INFO Path to config: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/CiscoTMSConfig.XML
+2021/03/03 09:49:53 INFO psscriptroot: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS
+2021/03/03 09:49:53 INFO Username: tms-api.test
+2021/03/03 09:49:53 INFO path to passwordfile: /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/keys/cryptfile.txt
+2021/03/03 09:49:53 INFO path to DefaultConferenceXML /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/original_GetDefaultConference.xml
+2021/03/03 09:49:53 INFO Path to Requestfile /Users/zgz953/Documents/Cygate/Domstolsverket/PS/Powershell_script/DV_Cisco_TMS/ConfRequest.xml
+2021/03/03 09:49:53 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 401
