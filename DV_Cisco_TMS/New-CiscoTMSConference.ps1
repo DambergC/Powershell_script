@@ -131,6 +131,10 @@ write-log -Level INFO -Message "path to passwordfile: $url"
 
 # Read passwordfile och convert to string
 $encrypted = Get-Content $url | ConvertTo-SecureString
+$UnsecurePassword = (New-Object PSCredential "user",$encrypted).GetNetworkCredential().Password
+
+Write-Log -Level INFO -Message "rawPass:  $UnsecurePassword"
+
 
 # Create variable with username and password
 $credential = New-Object System.Management.Automation.PsCredential($username, $encrypted)
@@ -148,7 +152,7 @@ $DefaultConferenceXML = Join-Path $PSScriptRoot $config.ConfigTMS.pathDefaultCon
 write-log -Level INFO -Message "path to DefaultConferenceXML $DefaultConferenceXML"
 
 # Post request to get default values of an conference-request.
-$PostRequest = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $DefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential)
+$PostRequest = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $DefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential -UseBasicParsing)
 
 
 # Read XML-response of default values to be used when POST a request for a Conference
