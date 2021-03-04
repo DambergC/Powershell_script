@@ -1,0 +1,40 @@
+2021/03/02 19:48:07 INFO ################# ny bokning  ###############
+2021/03/02 19:48:07 INFO Path to config: C:\GitHub\Powershell_script\DV_Cisco_TMS\CiscoTMSConfig.XML
+2021/03/02 19:48:07 INFO psscriptroot: C:\GitHub\Powershell_script\DV_Cisco_TMS
+2021/03/02 19:48:07 INFO Username: tms-api.test
+2021/03/02 19:48:07 INFO path to passwordfile: C:\GitHub\Powershell_script\DV_Cisco_TMS\keys\cryptfile.txt
+2021/03/02 19:48:07 INFO path to DefaultConferenceXML C:\GitHub\Powershell_script\DV_Cisco_TMS\original_GetDefaultConference.xml
+2021/03/02 19:48:09 INFO Path to Requestfile C:\GitHub\Powershell_script\DV_Cisco_TMS\ConfRequest.xml
+2021/03/02 19:48:09 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 
+2021/03/02 19:49:14 INFO ################# ny bokning  ###############
+2021/03/02 19:49:14 INFO Path to config: C:\GitHub\Powershell_script\DV_Cisco_TMS\CiscoTMSConfig.XML
+2021/03/02 19:49:14 INFO psscriptroot: C:\GitHub\Powershell_script\DV_Cisco_TMS
+2021/03/02 19:49:14 INFO Username: tms-api.test
+2021/03/02 19:49:14 INFO path to passwordfile: C:\GitHub\Powershell_script\DV_Cisco_TMS\keys\cryptfile.txt
+2021/03/02 19:49:14 INFO path to DefaultConferenceXML C:\GitHub\Powershell_script\DV_Cisco_TMS\original_GetDefaultConference.xml
+2021/03/02 19:49:14 INFO Path to Requestfile C:\GitHub\Powershell_script\DV_Cisco_TMS\ConfRequest.xml
+2021/03/02 19:49:14 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 
+2021/03/02 19:57:02 INFO ################# ny bokning  ###############
+2021/03/02 19:57:02 INFO Path to config: C:\GitHub\Powershell_script\DV_Cisco_TMS\CiscoTMSConfig.XML
+2021/03/02 19:57:02 INFO psscriptroot: C:\GitHub\Powershell_script\DV_Cisco_TMS
+2021/03/02 19:57:02 INFO Username: tms-api.test
+2021/03/02 19:57:02 INFO path to passwordfile: C:\GitHub\Powershell_script\DV_Cisco_TMS\keys\cryptfile.txt
+2021/03/02 19:57:02 INFO path to DefaultConferenceXML C:\GitHub\Powershell_script\DV_Cisco_TMS\original_GetDefaultConference.xml
+2021/03/02 19:57:03 INFO Path to Requestfile C:\GitHub\Powershell_script\DV_Cisco_TMS\ConfRequest.xml
+2021/03/02 19:57:03 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 
+2021/03/02 20:04:18 INFO ################# ny bokning  ###############
+2021/03/02 20:04:18 INFO Path to config: C:\GitHub\Powershell_script\DV_Cisco_TMS\CiscoTMSConfig.XML
+2021/03/02 20:04:18 INFO psscriptroot: C:\GitHub\Powershell_script\DV_Cisco_TMS
+2021/03/02 20:04:18 INFO Username: tms-api.test
+2021/03/02 20:04:18 INFO path to passwordfile: C:\GitHub\Powershell_script\DV_Cisco_TMS\keys\cryptfile.txt
+2021/03/02 20:04:18 INFO path to DefaultConferenceXML C:\GitHub\Powershell_script\DV_Cisco_TMS\original_GetDefaultConference.xml
+2021/03/02 20:04:18 INFO Path to Requestfile C:\GitHub\Powershell_script\DV_Cisco_TMS\ConfRequest.xml
+2021/03/02 20:04:20 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 200
+2021/03/02 20:06:44 INFO ################# ny bokning  ###############
+2021/03/02 20:06:44 INFO Path to config: C:\GitHub\Powershell_script\DV_Cisco_TMS\CiscoTMSConfig.XML
+2021/03/02 20:06:44 INFO psscriptroot: C:\GitHub\Powershell_script\DV_Cisco_TMS
+2021/03/02 20:06:44 INFO Username: tms-api.test
+2021/03/02 20:06:44 INFO path to passwordfile: C:\GitHub\Powershell_script\DV_Cisco_TMS\keys\cryptfile.txt
+2021/03/02 20:06:44 INFO path to DefaultConferenceXML C:\GitHub\Powershell_script\DV_Cisco_TMS\original_GetDefaultConference.xml
+2021/03/02 20:06:44 INFO Path to Requestfile C:\GitHub\Powershell_script\DV_Cisco_TMS\ConfRequest.xml
+2021/03/02 20:06:45 INFO Statuskod för bokningen 200=OK 500=ClientSession_Expired: 200

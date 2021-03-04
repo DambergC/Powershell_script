@@ -14,6 +14,7 @@
 	<PathTESTHtmlOutFile>TestHtml.Html</PathTESTHtmlOutFile>
     <pathDefaultConferenceXML>original_GetDefaultConference.xml</pathDefaultConferenceXML>
     <PathConferenceRequestOutput>ConfRequest.xml</PathConferenceRequestOutput>
+    <pathConferenceResult500>ConferenceResult500.xml<pathConferenceResult500>
 <!--Settings for participants-->    
     <ParticipantCallType>IP Video -></ParticipantCallType>
 <!--Settings for domain and phonenumbers-->

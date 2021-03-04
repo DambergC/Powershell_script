@@ -485,14 +485,17 @@ write-log -Level INFO -Message "Statuskod för bokningen 200=OK 500=ClientSessio
 # Read response and if Statuscode is 500 catch new ClientSessionID
 [xml]$ConferenceResult = $PostRequestNewConference
 
+# XML-path to 500 error file
+$ConferenceResult500 = Join-Path $PSScriptRoot $config.ConfigTMS.pathConferenceResult500
+
 if ($statuscode -eq '500') 
 {
 
   # Export Result to XML
-  $ConferenceResult | Export-Clixml -Path C:\dv\SEB-V2\ConferenceResult500.xml
+  $ConferenceResult | Export-Clixml -Path $ConferenceResult500
 
   # Import XML and extract new ClientSessionID
-  [XML]$indata = Get-Content -Path C:\dv\SEB-V2\ConferenceResult500.xml
+  [XML]$indata = Get-Content -Path $ConferenceResult500
   [XML]$raw = $indata.Objs.XD
   $newClientSessionID = $raw.Envelope.Body.Fault.detail.clientsessionid.'#text'
 
