@@ -1,3 +1,29 @@
+﻿$BookingNumber = 'BT 1144-20'
+$datum = '2021-04-04'
+$StartTime = '09:00'
+$EndTime = '10:00'
+$PinCode ='1234'
+$anslutandesystem = '2'
+$ConferenceNumber = '88888888'
+$PhoneNumber = '01011223344'
+$PhoneNumberINT = '+461011223344'
+
+# Email params
+$EmailParams = @{
+    To         = 'christian.damberg@cygate.se'
+    From       = 'no-reply@cygate.se'
+    Smtpserver = 'smtp.cygate.se'
+    Subject    = "Bokningsbekräftelse Bryggbokning ärendenr: $BookingNumber  |  $(Get-Date -Format dd-MMM-yyyy)"
+}
+
+
+
+
+
+
+
+# Create html header whit stylesheet
+$html = @"
 <!DOCTYPE html>
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,10 +49,16 @@
   {
         font-size: 13px;
   }
-</style><table cellpadding="10" cellspacing="10">
+</style>
+"@
+
+
+# Set html
+$html = $html + @"
+<table cellpadding="10" cellspacing="10">
 <tr>
   <td>
-    <h4>BRYGGBOKNING:<b>BB-1234</b></h4>
+    <h4>BRYGGBOKNING:<b>$BookingNumber</b></h4>
     
     <p><b>Hej!</b></p>
     <p>Här kommer din videokonferensebokning.</p>
@@ -45,15 +77,15 @@
 
     <h4>Du har bokat in följande virtuella mötesrum i Sveriges Domstolars brygga:</h4>
     
-    <p><b>BB-1234</b></p>
-    <p>Datum och tid:,2021-03-03 11:00:00Z - 2021-03-03 13:00:00Z</p>
+    <p><b>$BookingNumber</b></p>
+    <p>Datum och tid:$datum,$StartTime - $EndTime</p>
     <p>(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna</p> 
     <p><i>Mötesrummet öppnar 5 minuter innan bokad tid.</i></p>
 
 <hr style="height:2px" color="black">
-    <p>Mötesnummer:<b>2391519</b><br>
-    Pin-kod:<b>6116</b><br>
-    Anslutande system:<b>3</b></p>
+    <p>Mötesnummer:<b>$ConferenceNumber</b><br>
+    Pin-kod:<b>$PinCode</b><br>
+    Anslutande system:<b>$anslutandesystem</b></p>
 
 <hr style="height:2px" color="black">
 
@@ -72,17 +104,17 @@
 
     <p><U><b>Sveriges Domstolar: Videokonferens och JabberVideo-användare</b></u><br>
       <ul>
-          <li>Ring:<b>2391519</b>
-          <li>PIN-kod från Sal: Välj "Sänd tonval" i pekskärmen. Skicka PIN-kod:<b>6116#</b></li>
-          <li>PIN-kod från Rum: Aktivera tonval med knapp # på fjärrkontrollen. Skicka PIN-kod:<b>6116#</b></li>
-          <li>PIN-kod från JabberVideo/Movi: Välj "Tonval". Skicka PIN-kod:<b>6116#</b></li>
+          <li>Ring:<b>$ConferenceNumber</b>
+          <li>PIN-kod från Sal: Välj "Sänd tonval" i pekskärmen. Skicka PIN-kod:<b>$PinCode#</b></li>
+          <li>PIN-kod från Rum: Aktivera tonval med knapp # på fjärrkontrollen. Skicka PIN-kod:<b>$PinCode#</b></li>
+          <li>PIN-kod från JabberVideo/Movi: Välj "Tonval". Skicka PIN-kod:<b>$PinCode#</b></li>
       </ul>
     </p>
 
     <p><u><B>Deltagare via Internet/SGSI (utanför Sveriges Domstolar)</b></u><br>
       <ul>
-          <li>Ring:<b><a href=mailto:"2391519@dom.se">2391519@dom.se</a></b></li>
-          <li>Med tonval/knappsats slå PIN-kod:<b>6116#</b></li> 
+          <li>Ring:<b><a href=mailto:"$ConferenceNumber@dom.se">$ConferenceNumber@dom.se</a></b></li>
+          <li>Med tonval/knappsats slå PIN-kod:<b>$PinCode#</b></li> 
       </ul>
     </p>
 
@@ -93,16 +125,16 @@ Webb-kamera och headset rekommenderas.</p>
 <li>Videokonferens via webbläsare (fungerar ej i Internet Explorer eller Edge version 41):</li>
 <b> Cisco Meeting App link ska in här....!!!!</b>
 
-<li>Mötesnummer:<b>2391519</b></li>
-<li>PIN-kod:<b>6116</b></li> 
+<li>Mötesnummer:<b>$ConferenceNumber</b></li>
+<li>PIN-kod:<b>$PinCode</b></li> 
 </ul>
 
 
 <p><u><b>Telefondeltagare och Videokonferens via ISDN (utanför Sveriges Domstolar)</b></u><br>
 <ul>
-<li>Ring:<b>01012345678</b></li>
-<li>Med tonval/knappsats slå mötesnummer:<b>2391519#</b></li> 
-<li>Med tonval/knappsats slå PIN-kod:<b>6116#</b></li> 
+<li>Ring:<b>$PhoneNumber</b></li>
+<li>Med tonval/knappsats slå mötesnummer:<b>$ConferenceNumber#</b></li> 
+<li>Med tonval/knappsats slå PIN-kod:<b>$PinCode#</b></li> 
 </ul>
 <hr style="height:2px" color="black">
 
@@ -110,8 +142,8 @@ Webb-kamera och headset rekommenderas.</p>
 
 <p><b><u>Participant via Internet/SGSI (outside the Swedish National Courts)</u></b></p>
 <ul>
-<li>Call:<b><a href=mailto:"2391519@dom.se">2391519@dom.se</a></b></li>
-<li>Send Pin:<b>6116#</b></li> 
+<li>Call:<b><a href=mailto:"$ConferenceNumber@dom.se">$ConferenceNumber@dom.se</a></b></li>
+<li>Send Pin:<b>$PinCode#</b></li> 
 </ul>
 </p>
 
@@ -120,20 +152,35 @@ Webb-kamera och headset rekommenderas.</p>
 <li>Join using web browser (not Internet Explorer or Edge version 41):</li>
 <b> Cisco Meeting App link ska in här....!!!!</b>
 
-<li>Meeting number:<b>2391519</b></li>
-<li>PIN:<b>6116</b></li> 
+<li>Meeting number:<b>$ConferenceNumber</b></li>
+<li>PIN:<b>$PinCode</b></li> 
 </ul>
 
 <p><u><b>Participant by phone or Video via ISDN (outside the Swedish National Courts)</b></u><br>
 <ul>
-<li>Call ISDN to:<b>+461012345678</b></li>
-<li>Send meeting number:<b>2391519#</b></li> 
-<li>Send Pin:<b>6116#</b></li> 
+<li>Call ISDN to:<b>$PhoneNumberINT</b></li>
+<li>Send meeting number:<b>$ConferenceNumber#</b></li> 
+<li>Send Pin:<b>$PinCode#</b></li> 
 </ul>
 
 
   </td>
 
 </tr>
-</table></body>
+</table>
+"@
+
+
+# Close html document
+$html = $html + @"
+</body>
 </html>
+"@
+
+# Send email
+# Send-MailMessage @EmailParams -Body $html -BodyAsHtml
+
+$html | Out-File C:\dv\test.html -Force
+
+# Send email
+#Send-MailMessage @EmailParams -Body $html -BodyAsHtml -Encoding utf8

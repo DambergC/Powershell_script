@@ -38,40 +38,19 @@
 [CmdletBinding()]
 param
 (
-	[Parameter(Mandatory = $true,
-			   HelpMessage = 'yyyy-MM-dd hh:mm:ss')]
+	[Parameter(Mandatory = $true, HelpMessage = 'yyyy-MM-dd hh:mm:ss')]
 	[datetime]$Inputstart,
-	[Parameter(Mandatory = $true,
-			   HelpMessage = 'Meeting length in hours')]
-	[string]$Inputlength,
+	[Parameter(Mandatory = $true, HelpMessage = 'Meeting length in hours')]
+	[string]$Inputlength = '12',
 	[Parameter(Mandatory = $true)]
 	[string]$Bookingnumber,
-	[Parameter(Mandatory = $true,
-			   HelpMessage = 'the one who booked the conference')]
-	[string]$BookedBy,
-	[Parameter(Mandatory = $true)]
-	[array]$ExtDeltagare,
-	[Parameter(Mandatory = $false)]
-	[ValidateSet('Yes', 'No', IgnoreCase = $true)]
-	[string]$TestOnly = 'Yes'
+	[Parameter(Mandatory = $true, HelpMessage = 'the one who booked the conference')]
+	[string]$BookedBy
 )
 
 ################################################################################################
 # Functions in script
 ################################################################################################
-
-# Function used in troubleshooting during development
-function Write-Failure {
-$global:helpme = $body
-$global:helpmoref = $moref
-$global:result = $_.Exception.Response.GetResponseStream()
-$global:reader = New-Object System.IO.StreamReader($global:result)
-$global:responseBody = $global:reader.ReadToEnd();
-Write-Host -BackgroundColor:Black -ForegroundColor:Red "Status: A system exception was caught."
-Write-Host -BackgroundColor:Black -ForegroundColor:Red $global:responsebody
-Write-Host -BackgroundColor:Black -ForegroundColor:Red "The request body has been saved to `$global:helpme"
-break
-}
 
 # Function to write to logfile
 Function Write-Log {
@@ -133,9 +112,6 @@ write-log -Level INFO -Message "path to passwordfile: $url"
 $encrypted = Get-Content $url | ConvertTo-SecureString
 $UnsecurePassword = (New-Object PSCredential "user",$encrypted).GetNetworkCredential().Password
 
-Write-Log -Level INFO -Message "rawPass:  $UnsecurePassword"
-
-
 # Create variable with username and password
 $credential = New-Object System.Management.Automation.PsCredential($username, $encrypted)
 
@@ -158,11 +134,13 @@ $PostRequest = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile
 # Read XML-response of default values to be used when POST a request for a Conference
 [xml]$DefaultConfValue = $PostRequest
 
-# List Value in console DEVELOPMENT ONLY
-if ($TestOnly -eq 'Yes') 
-{
-  $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult
-}
+################################################################################################
+################################################################################################
+# This section if for create a xml-file used in the end of this section to post a request to 
+# the API for Cisco TMS
+################################################################################################
+################################################################################################
+
 
 ################################################################################################
 #
@@ -181,13 +159,21 @@ $ClientLatestNamespaceIn = 'String'
 $NewServiceURL = 'string'
 
 # Variable from input
-$starttimeUTC = $InputStart.ToString('yyyy-MM-dd HH:mm:ssZ')
 
-# $SwedishTime = 
+# Starttime modified with value from config to adjust for timezone
+$StartTimeModified = $Inputstart.AddHours($config.configtms.timeadjust)
 
-$Meetingtime = $inputstart.AddHours($InputLength)
+# Starttime for meeting
+$starttimeUTC = $StartTimeModified.ToString('yyyy-MM-dd HH:mm:ssZ')
+$starttimeToMail = $inputstart.ToString('yyyy-MM-dd HH:mm')
 
+# How many hours 
+$Meetingtime = $StartTimeModified.AddHours($InputLength)
+$endtimeToMail = $inputstart.AddHours($Inputlength)
+
+# End of meeting
 $endtimeUTC = $Meetingtime.ToString('yyyy-MM-dd HH:mm:ssZ')
+$endtimeToMailformat = $endtimeToMail.ToString('yyyy-MM-dd HH:mm')
 
 $Title = $Bookingnumber
 
@@ -206,6 +192,8 @@ $DataConference = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.G
 $Password = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Password
 $ShowExtendOption = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ShowExtendOption
 $ISDNRestrict = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ISDNRestrict
+$NameOrNumber = $config.configtms.ParticipantDefaultName
+$ParticipantCallType = $config.configtms.ParticipantCallType
 
 ################################################################################################
 # Path for XML output
@@ -402,14 +390,8 @@ $writer.WriteStartElement("Participants")
 ################################################################################################
 ################################################################################################
 
-$ExtDeltagare.ForEach(
-	{
-		$NameOrNumber = $_
-		$ParticipantCallType = 'IP Video ->'
-		
-		# Start Participant
-		$writer.WriteStartElement("Participant")
-		
+$writer.WriteStartElement("Participant")
+
 		# NameOrNumber
 		$writer.WriteStartElement("NameOrNumber")
 		$writer.WriteString("$NameOrNumber")
@@ -422,8 +404,8 @@ $ExtDeltagare.ForEach(
 		
 		# End Participant
 		$writer.WriteEndElement()
-	}
-)
+
+
 ################################################################################################
 
 # End Participants
@@ -451,36 +433,12 @@ $writer.Close()
 #
 ################################################################################################
 
-
-
-try
-{
     # POST a request for an Conference
     $PostRequestNewConference = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $XMLpath -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck)
     
     # Get statuscode 200=OK 500
     $StatusCode = $PostRequestNewConference.StatusCode
     
-}
-
-catch
-{
-    $StatusCode = $_.Exception.Response.StatusCode.value__
-    $failure = $_.Exception.Response.body
-    Write-Failure
-
-}
-
-
-
-# Test only writes statuscode in terminal
-if ($TestOnly -eq 'yes') {
-
-  write-host "Statuscode:$StatusCode"
-  $global:helpme
-  $global:responsebody
-}
-
 
 # Write to log
 write-log -Level INFO -Message "Statuskod för bokningen 200=OK 500=ClientSession_Expired: $statuscode"
@@ -488,6 +446,8 @@ write-log -Level INFO -Message "Statuskod för bokningen 200=OK 500=ClientSessio
 
 # Read response and if Statuscode is 500 catch new ClientSessionID
 [xml]$ConferenceResult = $PostRequestNewConference
+
+$TMSConferenceID = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.ConferenceId
 
 # XML-path to 500 error file
 $ConferenceResult500 = Join-Path $PSScriptRoot $config.ConfigTMS.pathConferenceResult500
@@ -517,9 +477,55 @@ if ($statuscode -eq '500')
     
 # Write log  
 
+# Catch the conference values after rerun of invoke-webrequest because of error 500
+[xml]$ConferenceResult = $PostRequestNewConference
+
+$TMSConferenceID = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.ConferenceId
+
 }
 
 
+################################################################################################
+################################################################################################
+# This section if for extracting the number to call to the conference
+################################################################################################
+################################################################################################
+
+# Create variable to use with invoke-request
+$xmlpathConferenceByID = Join-Path $PSScriptRoot $config.ConfigTMS.PathConferenceByID
+
+
+# Import of request-xml to update ConferenceID to get the number to call
+$xml=New-Object XML
+$xml.Load($xmlpathConferenceByID)
+$node=$xml.Envelope.Body.GetConferenceByID
+$node.ConferenceId=$TMSConferenceID
+$xml.Save($xmlpathConferenceByID)
+
+
+# POST a new request for an Conference
+$PostRequestConferenceByID = (Invoke-WebRequest -Uri $pathAPI -InFile $xmlpathConferenceByID -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck)
+
+# Create variable to file where to extract the field RawContent
+$xmlpathRawcontent = Join-Path $PSScriptRoot $config.ConfigTMS.PathConferenceByIDResult
+
+# Send the field RawContent to file
+$PostRequestConferenceByID.RawContent | Out-File $xmlpathRawcontent
+
+# Read variable in Configfile to which row in file to extract
+$RowInFile = $config.ConfigTMS.RowInFile 
+
+# Extract the row with the number to a variable
+$callinnumber = Get-Content $xmlpathRawcontent | Select-Object -Index $RowInFile
+
+# Trim selected from variable
+$CallinnumberTrimmed = $callinnumber.Trim(" ","-")
+
+# Read variable in configfile how many numbers in the number
+$digits = $config.ConfigTMS.Digits 
+
+# Extract the number
+$callinnumberFinal = $CallinnumberTrimmed.Substring(0,$digits)
 
 ################################################################################################
 #
@@ -529,15 +535,24 @@ if ($statuscode -eq '500')
 
 # Variabelkonverting för att kunna infoga värden i htmlformat.
 $emailsubject = $config.configtms.EmailSubject
-$ConferenceNumber = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.ConferenceId
-$StartTime = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.StartTimeUTC
-$EndTime = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.EndTimeUTC
+
+# The number to dail in
+$ConferenceNumber = $CallinnumberFinal
+#$StartTime = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.StartTimeUTC
+#$EndTime = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.EndTimeUTC
+
+# Pin-code to the meeting
 $PinCode = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.Password
+
+# Phonenumber for national participants
 $PhoneNumber = $config.configtms.Phonenumber
+
+# Phonenumber for international participants
 $PhoneNumberINT = $config.configtms.PhonenumberINT
-$SupportDeskNumber = $Bookingnumber
-$NumbersOfPaticipants = $ExtDeltagare.count
+
+#$NumbersOfPaticipants = $ExtDeltagare.count
 $domain=$config.configtms.Domain
+$JoinUrl=$config.configtms.JoinUrl
 
 
 # Email params
@@ -545,7 +560,7 @@ $EmailParams = @{
     To         = $BookedBy
     From       = $config.ConfigTMS.EmailFrom
     Smtpserver = $config.ConfigTMS.EmailSMTP
-    Subject    = "$emailsubject $Ordernumber  |  $(Get-Date -Format dd-MMM-yyyy)"
+    Subject    = "$emailsubject $BookingNumber  |  $(Get-Date -Format dd-MMM-yyyy)"
 }
 
 
@@ -617,7 +632,7 @@ $html = $html + @"
 <table cellpadding="10" cellspacing="10">
 <tr>
   <td>
-    <h4>BRYGGBOKNING:<b>$SupportDeskNumber</b></h4>
+    <h4>BRYGGBOKNING:<b>$BookingNumber</b></h4>
     
     <p><b>Hej!</b></p>
     <p>Här kommer din videokonferensebokning.</p>
@@ -636,15 +651,15 @@ $html = $html + @"
 
     <h4>Du har bokat in följande virtuella mötesrum i Sveriges Domstolars brygga:</h4>
     
-    <p><b>$SupportDeskNumber</b></p>
-    <p>Datum och tid:$datum,$StartTime - $EndTime</p>
+    <p>Ärendenummer:<b>$BookingNumber</b></p>
+    <p>Datum och tid:$starttimeToMail - $endtimeToMailformat</p>
     <p>(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna</p> 
     <p><i>Mötesrummet öppnar 5 minuter innan bokad tid.</i></p>
 
 <hr style="height:2px" color="black">
     <p>Mötesnummer:<b>$ConferenceNumber</b><br>
     Pin-kod:<b>$PinCode</b><br>
-    Anslutande system:<b>$NumbersOfPaticipants</b></p>
+
 
 <hr style="height:2px" color="black">
 
@@ -677,16 +692,6 @@ $html = $html + @"
       </ul>
     </p>
 
-<p><u><b>Deltagare via webbläsare - WebRTC (utanför Sveriges Domstolar)</u></b><br>
-Bild- och ljudkvalitet kan variera beroende på din dators/plattas/mobiltelefones prestanda och bandbredd.<br> 
-Webb-kamera och headset rekommenderas.</p>
-<ul>
-<li>Videokonferens via webbläsare (fungerar ej i Internet Explorer eller Edge version 41):</li>
-<b> Cisco Meeting App link ska in här....!!!!</b>
-
-<li>Mötesnummer:<b>$ConferenceNumber</b></li>
-<li>PIN-kod:<b>$PinCode</b></li> 
-</ul>
 
 
 <p><u><b>Telefondeltagare och Videokonferens via ISDN (utanför Sveriges Domstolar)</b></u><br>
@@ -709,7 +714,7 @@ Webb-kamera och headset rekommenderas.</p>
 <p><u><b>Participant via web browser - WebRTC (outside the Swedish National Courts)</u></b><br></p>
 <ul>
 <li>Join using web browser (not Internet Explorer or Edge version 41):</li>
-<b> Cisco Meeting App link ska in här....!!!!</b>
+<b><a href="$joinurl">$joinurl</a></b>
 
 <li>Meeting number:<b>$ConferenceNumber</b></li>
 <li>PIN:<b>$PinCode</b></li> 
@@ -729,23 +734,18 @@ Webb-kamera och headset rekommenderas.</p>
 </table>
 "@
 
-
 # Close html document
 $html = $html + @"
 </body>
 </html>
 "@
 
-# Send email
+# Send email and create htmlfile
 
 $testfile_html = Join-Path $PSScriptRoot $config.ConfigTMS.PathTESTHtmlOutFile
 
-if ($TestOnly -eq 'Yes')
-{
+
 	$html | Out-File $testfile_html -Force
-}
-else 
-{
+
 	Send-MailMessage @EmailParams -Body $html -BodyAsHtml -Encoding utf8
-}
 

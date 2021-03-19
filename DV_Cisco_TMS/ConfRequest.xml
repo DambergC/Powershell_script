@@ -11,16 +11,16 @@
       <ClientIdentifierIn>string</ClientIdentifierIn>
       <ClientLatestNamespaceIn>String</ClientLatestNamespaceIn>
       <NewServiceURL>string</NewServiceURL>
-      <ClientSession>0</ClientSession>
+      <ClientSession>cb25e3d4-1530-422a-ab95-511ed032f2be</ClientSession>
     </ExternalAPIVersionSoapHeader>
   </soap12:Header>
   <soap12:Body>
     <SaveConference xmlns="http://tandberg.net/2004/02/tms/external/booking/">
       <Conference>
         <ConferenceID>-1</ConferenceID>
-        <Title>BB-1234</Title>
-        <StartTimeUTC>2021-03-03 11:00:00Z</StartTimeUTC>
-        <EndTimeUTC>2021-03-03 13:00:00Z</EndTimeUTC>
+        <Title>bokningnr:FinalTEST</Title>
+        <StartTimeUTC>2021-03-23 06:00:00Z</StartTimeUTC>
+        <EndTimeUTC>2021-03-23 18:00:00Z</EndTimeUTC>
         <OwnerId>16387</OwnerId>
         <OwnerUserName>cygateviscom\tms-api.test</OwnerUserName>
         <OwnerFirstName>TMS-API</OwnerFirstName>
@@ -32,19 +32,11 @@
         <Encrypted>If Possible</Encrypted>
         <DataConference>No</DataConference>
         <ShowExtendOption>Yes</ShowExtendOption>
-        <Password>1482</Password>
+        <Password>5760</Password>
         <ISDNRestrict>false</ISDNRestrict>
         <Participants>
           <Participant>
-            <NameOrNumber>pelle</NameOrNumber>
-            <ParticipantCallType>IP Video -&gt;</ParticipantCallType>
-          </Participant>
-          <Participant>
-            <NameOrNumber>nisse</NameOrNumber>
-            <ParticipantCallType>IP Video -&gt;</ParticipantCallType>
-          </Participant>
-          <Participant>
-            <NameOrNumber>olle</NameOrNumber>
+            <NameOrNumber>Deltagare</NameOrNumber>
             <ParticipantCallType>IP Video -&gt;</ParticipantCallType>
           </Participant>
         </Participants>

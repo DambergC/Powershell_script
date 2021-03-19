@@ -4,21 +4,31 @@
     <EmailFrom>no-reply@cygate.se</EmailFrom>
     <EmailSMTP>smtp.cygate.se</EmailSMTP>
     <EmailSubject>Bokningsbekräftelse Bryggbokning ärendenr:</EmailSubject>
-<!--Settings for XML Accounts and API-->
+<!--Settings for XML Accounts and API and timeadjust-->
     <pathCiscoTMSAPI>https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl</pathCiscoTMSAPI>
     <username>tms-api.test</username>
     <pathPwdFile>keys/cryptfile.txt</pathPwdFile>
+    <TimeAdjust>-1</TimeAdjust> <!-- -1=withdraw one hour 1=forward one hour -->
 <!--Logfile, Testfile for html-email, xml for defaultconference and Request-XNL -->    
     <Logfile>ConferenceBooking.log</Logfile>
     <PathGetTransactionXML>Get-TransactionID.xml</PathGetTransactionXML>
-	<PathTESTHtmlOutFile>TestHtml.Html</PathTESTHtmlOutFile>
+	<PathTESTHtmlOutFile>MailOut.Html</PathTESTHtmlOutFile>
     <pathDefaultConferenceXML>original_GetDefaultConference.xml</pathDefaultConferenceXML>
     <PathConferenceRequestOutput>ConfRequest.xml</PathConferenceRequestOutput>
-    <pathConferenceResult500>ConferenceResult500.xml<pathConferenceResult500>
+    <PathConferenceByID>GetConferenceByID.XML</PathConferenceByID>
+    <pathConferenceResult500>ConferenceResult500.xml</pathConferenceResult500>
+    <PathConferenceByIDResult>HTML.XML</PathConferenceByIDResult>
 <!--Settings for participants-->    
     <ParticipantCallType>IP Video -></ParticipantCallType>
+    <ParticipantDefaultName>Deltagare</ParticipantDefaultName>
 <!--Settings for domain and phonenumbers-->
+    <JoinUrl>https://webrtc.dom.se</JoinUrl>
     <Domain>dom.se</Domain>
     <Phonenumber>01012345678</Phonenumber>
     <PhonenumberINT>+461012345678</PhonenumberINT>
+<!--Settings for extracting the number to call in-->
+    <!--Row in file with the value (actual row -1)-->
+    <RowInFile>14</RowInFile>
+    <!--Number of digits-->
+    <Digits>6</Digits>
 </ConfigTMS>

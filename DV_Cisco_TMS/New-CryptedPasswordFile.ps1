@@ -45,3 +45,4 @@ function New-CryptedPasswordFile
     {
     }
 }
+New-CryptedPasswordFile
