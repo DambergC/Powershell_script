@@ -504,7 +504,7 @@ $xml.Save($xmlpathConferenceByID)
 
 
 # POST a new request for an Conference
-$PostRequestConferenceByID = (Invoke-WebRequest -Uri $pathAPI -InFile $xmlpathConferenceByID -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck)
+$PostRequestConferenceByID = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $xmlpathConferenceByID -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck)
 
 # Create variable to file where to extract the field RawContent
 $xmlpathRawcontent = Join-Path $PSScriptRoot $config.ConfigTMS.PathConferenceByIDResult
@@ -518,14 +518,9 @@ $RowInFile = $config.ConfigTMS.RowInFile
 # Extract the row with the number to a variable
 $callinnumber = Get-Content $xmlpathRawcontent | Select-Object -Index $RowInFile
 
-# Trim selected from variable
-$CallinnumberTrimmed = $callinnumber.Trim(" ","-")
-
-# Read variable in configfile how many numbers in the number
-$digits = $config.ConfigTMS.Digits 
-
 # Extract the number
-$callinnumberFinal = $CallinnumberTrimmed.Substring(0,$digits)
+# $callinnumberFinal = $CallinnumberTrimmed.Substring(0,$digits)
+$CallinnumberFinal = $callinnumber -replace "\D+"
 
 ################################################################################################
 #

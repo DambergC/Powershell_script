@@ -29,6 +29,4 @@
 <!--Settings for extracting the number to call in-->
     <!--Row in file with the value (actual row -1)-->
     <RowInFile>14</RowInFile>
-    <!--Number of digits-->
-    <Digits>6</Digits>
 </ConfigTMS>
