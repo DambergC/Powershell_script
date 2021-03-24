@@ -12,7 +12,7 @@
 		Created with: 	SAPIEN Technologies, Inc., PowerShell Studio 2021 v5.8.183
 		Created on:   	1/27/2021 10:35 AM
 		Updated on:		  1/27/2021 10:35 AM
-		Created by:   	Christian Damberg, Sebastian Thörngren
+		Created by:   	Christian Damberg, Sebastian Thörngren.
 		Organization: 	Cygate AB
 		Filename:     	New-CryptedPasswordFile.ps1
 		===========================================================================
