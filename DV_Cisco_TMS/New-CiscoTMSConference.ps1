@@ -34,6 +34,7 @@
 #>
 
 
+
 # Inputvalues needed to send a request for Conference.
 [CmdletBinding()]
 param
@@ -47,6 +48,12 @@ param
 	[Parameter(Mandatory = $true, HelpMessage = 'the one who booked the conference')]
 	[string]$BookedBy
 )
+
+
+
+$scriptversion = '1.5'
+$scriptdate = '2021-03-31'
+
 
 ################################################################################################
 # Functions in script
@@ -68,7 +75,7 @@ Function Write-Log {
 
   $Stamp = (Get-Date).toString("yyyy/MM/dd HH:mm:ss")
   $Line = "$Stamp $Level $Message"
-        Add-Content $logfile -Value $Line
+  Add-Content $logfile -Value $Line
   }
 
 ################################################################################################
@@ -84,11 +91,39 @@ $absPath = Join-Path $PSScriptRoot "/CiscoTMSConfig.XML"
 # Path to logfile
 $logfile = Join-Path $PSScriptRoot $config.ConfigTMS.Logfile
 
+write-log -Level INFO -Message "Script version:$scriptversion ScriptDate:$scriptdate"
+
 # Write to log
-write-log -Level INFO -Message "################# ny bokning $stamp ###############"
+write-log -Level INFO -Message "################################################################################################"
+write-log -Level INFO -Message "Script version:$scriptversion ScriptDate:$scriptdate"
+write-log -Level INFO -Message "New Conference Booking $stamp"
+write-log -Level INFO -Message "################################################################################################"
 write-log -Level INFO -Message "Path to config: $abspath"
 write-log -Level INFO -Message "psscriptroot: $psscriptroot"
 
+################################################################################################
+#
+# Create Temp-folder if not exist
+#
+################################################################################################
+
+$Tempfolder = Join-Path $PSScriptRoot $config.ConfigTMS.Tempfolder
+
+
+if (-not (Test-Path -path $Tempfolder -pathtype Container)) {
+    
+    try {
+        New-Item -Path $Tempfolder -ItemType Directory -ErrorAction Stop | Out-Null #-Force
+    }
+    catch {
+        Write-Error -Message "Unable to create directory '$Tempfolder'. Error was: $_" -ErrorAction Stop
+    }
+    write-log -level INFO -Message "Successfully created tempfolder $Tempfolder"
+
+}
+else {
+  write-log -level INFO -Message  "Directory already exist $Tempfolder"
+}
 
 ################################################################################################
 #
@@ -100,7 +135,7 @@ write-log -Level INFO -Message "psscriptroot: $psscriptroot"
 $username = $config.ConfigTMS.username
 
 # Write to log
-write-log -Level INFO -Message "Username: $username"
+write-log -Level INFO -Message "Account running the script: $username"
 
 # Import password from crypted passwordfile
 $url = Join-Path $PSScriptRoot $config.ConfigTMS.pathPwdFile
@@ -121,18 +156,36 @@ $credential = New-Object System.Management.Automation.PsCredential($username, $e
 #
 ################################################################################################
 
-# Create variable to use with invoke-request
-$DefaultConferenceXML = Join-Path $PSScriptRoot $config.ConfigTMS.pathDefaultConferenceXML
-
-# Write to log
-write-log -Level INFO -Message "path to DefaultConferenceXML $DefaultConferenceXML"
+# XML file used to extract default-values from Cisco TMS
+[System.Xml.XmlDocument] $original_GetDefaultConferenceXML =
+@"
+<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Header>
+    <ExternalAPIVersionSoapHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ClientVersionIn>15</ClientVersionIn>
+      <ClientIdentifierIn>string</ClientIdentifierIn>
+      <ClientLatestNamespaceIn>string</ClientLatestNamespaceIn>
+      <NewServiceURL>string</NewServiceURL>
+      <ClientSession>string</ClientSession>
+    </ExternalAPIVersionSoapHeader>
+  </soap12:Header>
+  <soap12:Body>
+    <GetDefaultConference xmlns="http://tandberg.net/2004/02/tms/external/booking/" />
+  </soap12:Body>
+</soap12:Envelope>
+"@
 
 # Post request to get default values of an conference-request.
-$PostRequest = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $DefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential -UseBasicParsing)
+$apipath = $config.ConfigTMs.pathCiscoTMSAPI
 
+write-log -Level INFO -Message "Address to Cisco APi $apipath"
+
+$PostRequest = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $original_GetDefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential -UseBasicParsing
 
 # Read XML-response of default values to be used when POST a request for a Conference
-[xml]$DefaultConfValue = $PostRequest
+
+[xml]$ResultXML_GetDefaultConference = $PostRequest.Content
 
 ################################################################################################
 ################################################################################################
@@ -149,7 +202,7 @@ $PostRequest = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile
 ################################################################################################
 
 # Variable HEADER
-$conferenceid = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ConferenceId
+$conferenceid = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ConferenceId
 $SendConfirmationMail = 'true'
 $ExcludeConferenceInformation = 'false'
 $ClientLanguage = 'en'
@@ -179,348 +232,217 @@ $Title = $Bookingnumber
 
 # Variable BODY 
 $ClientSession = '0'
-$OwnerId = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerId
-$OwnerUserName = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerUserName
-$OwnerFirstName = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerFirstName
-$OwnerLastName = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerLastName
-$OwnerEmailAddress = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerEmailAddress
-$ConferenceType = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ConferenceType
-$Bandwidth = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Bandwidth
-$PictureMode = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.PictureMode
-$Encrypted = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Encrypted
-$DataConference = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.DataConference
-$Password = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Password
-$ShowExtendOption = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ShowExtendOption
-$ISDNRestrict = $DefaultConfValue.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ISDNRestrict
+$OwnerId = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerId
+$OwnerUserName = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerUserName
+$OwnerFirstName = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerFirstName
+$OwnerLastName = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerLastName
+$OwnerEmailAddress = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.OwnerEmailAddress
+$ConferenceType = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ConferenceType
+$Bandwidth = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Bandwidth
+$PictureMode = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.PictureMode
+$Encrypted = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Encrypted
+$DataConference = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.DataConference
+$Password = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.Password
+$ShowExtendOption = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ShowExtendOption
+$ISDNRestrict = $ResultXML_GetDefaultConference.Envelope.Body.GetDefaultConferenceResponse.GetDefaultConferenceResult.ISDNRestrict
 $NameOrNumber = $config.configtms.ParticipantDefaultName
 $ParticipantCallType = $config.configtms.ParticipantCallType
 
 ################################################################################################
-# Path for XML output
-$XMLpath = Join-Path $PSScriptRoot $config.ConfigTMS.PathConferenceRequestOutput
 
-# Write to log
-write-log -Level INFO -Message "Path to Requestfile $xmlpath"
-
-################################################################################################
-
-################################################################################################
-# Set up encoding, and create new instance of XMLTextWriter
-$encoding = [System.Text.Encoding]::UTF8
-$writer = New-Object -TypeName System.Xml.XmlTextWriter -ArgumentList ($XMLpath, $encoding)
-$writer.Formatting = [system.xml.formatting]::indented
-$writer.Indentation = 2
-################################################################################################
-
-# Write start of XML document - REQUEST
-$writer.WriteStartDocument()
-
-# Start envelope
-################################################################################################
-$writer.WriteStartElement("soap12:Envelope")
-$writer.WriteAttributeString("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
-$writer.WriteAttributeString("xmlns:xsd", "http://www.w3.org/2001/XMLSchema")
-$writer.WriteAttributeString("xmlns:soap12", "http://www.w3.org/2003/05/soap-envelope")
-
-# Start header
-################################################################################################
-
-# Start soap12:header
-$writer.WriteStartElement("soap12:Header")
-
-# Start ContextHeader
-$writer.WriteStartElement("ContextHeader")
-$writer.WriteAttributeString("xmlns", "http://tandberg.net/2004/02/tms/external/booking/")
-
-# SendConfirmationMail
-$writer.WriteStartElement("SendConfirmationMail")
-$writer.WriteString("$SendConfirmationMail")
-$writer.WriteEndElement()
-
-# ExcludeConferenceInformation
-$writer.WriteStartElement("ExcludeConferenceInformation")
-$writer.WriteString("$ExcludeConferenceInformation")
-$writer.WriteEndElement()
-
-# ClientLanguage
-$writer.WriteStartElement("ClientLanguage")
-$writer.WriteString("$ClientLanguage")
-$writer.WriteEndElement()
-
-# End ContextHeader
-$writer.WriteEndElement()
-
-# Start ExternalAPIVersionSoapHeader
-$writer.WriteStartElement("ExternalAPIVersionSoapHeader")
-$writer.WriteAttributeString("xmlns", "http://tandberg.net/2004/02/tms/external/booking/")
-
-# ClientVersionIn
-$writer.WriteStartElement("ClientVersionIn")
-$writer.WriteString("$ClientVersionIn")
-$writer.WriteEndElement()
-
-# ClientIdentifierIn
-$writer.WriteStartElement("ClientIdentifierIn")
-$writer.WriteString("$ClientIdentifierIn")
-$writer.WriteEndElement()
-
-# ClientLatestNamespaceIn
-$writer.WriteStartElement("ClientLatestNamespaceIn")
-$writer.WriteString("$ClientLatestNamespaceIn")
-$writer.WriteEndElement()
-
-# NewServiceURL
-$writer.WriteStartElement("NewServiceURL")
-$writer.WriteString("$NewServiceURL")
-$writer.WriteEndElement()
-
-# ClientSession
-$writer.WriteStartElement("ClientSession")
-$writer.WriteString("$ClientSession")
-$writer.WriteEndElement()
-
-
-
-# End ExternalAPIVersionSoapHeader
-$writer.WriteEndElement()
-
-# End soap12:header
-$writer.WriteEndElement()
-
-# Start body
-################################################################################################
-$writer.WriteStartElement("soap12:Body")
-
-# Start SaveConference
-$writer.WriteStartElement("SaveConference")
-$writer.WriteAttributeString("xmlns", "http://tandberg.net/2004/02/tms/external/booking/")
-
-    # Start Conference
-    $writer.WriteStartElement("Conference")
-
-# ConferenceID
-$writer.WriteStartElement("ConferenceID")
-$writer.WriteString($conferenceid)
-$writer.WriteEndElement()
-
-# Title
-$writer.WriteStartElement("Title")
-$writer.WriteString("$Title")
-$writer.WriteEndElement()
-
-# StartTimeUTC
-$writer.WriteStartElement("StartTimeUTC")
-$writer.WriteString("$StartTimeUTC")
-$writer.WriteEndElement()
-
-# EndTimeUTC
-$writer.WriteStartElement("EndTimeUTC")
-$writer.WriteString("$EndTimeUTC")
-$writer.WriteEndElement()
-
-# OwnerId
-$writer.WriteStartElement("OwnerId")
-$writer.WriteString("$OwnerId")
-$writer.WriteEndElement()
-
-# OwnerUserName
-$writer.WriteStartElement("OwnerUserName")
-$writer.WriteString("$OwnerUserName")
-$writer.WriteEndElement()
-
-# OwnerFirstName
-$writer.WriteStartElement("OwnerFirstName")
-$writer.WriteString("$OwnerFirstName")
-$writer.WriteEndElement()
-
-# OwnerLastName
-$writer.WriteStartElement("OwnerLastName")
-$writer.WriteString("$OwnerLastName")
-$writer.WriteEndElement()
-
-# OwnerEmailAddress
-$writer.WriteStartElement("OwnerEmailAddress")
-$writer.WriteString("$OwnerEmailAddress")
-$writer.WriteEndElement()
-
-# ConferenceType
-$writer.WriteStartElement("ConferenceType")
-$writer.WriteString("$ConferenceType")
-$writer.WriteEndElement()
-
-# Bandwidth
-$writer.WriteStartElement("Bandwidth")
-$writer.WriteString("$Bandwidth")
-$writer.WriteEndElement()
-
-# PictureMode
-$writer.WriteStartElement("PictureMode")
-$writer.WriteString("$PictureMode")
-$writer.WriteEndElement()
-
-# Encrypted
-$writer.WriteStartElement("Encrypted")
-$writer.WriteString("$Encrypted")
-$writer.WriteEndElement()
-
-# DataConference
-$writer.WriteStartElement("DataConference")
-$writer.WriteString("$DataConference")
-$writer.WriteEndElement()
-
-# ShowExtendOption
-$writer.WriteStartElement("ShowExtendOption")
-$writer.WriteString("$ShowExtendOption")
-$writer.WriteEndElement()
-
-# Password
-$writer.WriteStartElement("Password")
-$writer.WriteString("$Password")
-$writer.WriteEndElement()
-
-# ISDNRestrict
-$writer.WriteStartElement("ISDNRestrict")
-$writer.WriteString("$ISDNRestrict")
-$writer.WriteEndElement()
-
-################################################################################################
-# Start Participants
-$writer.WriteStartElement("Participants")
-
-################################################################################################
-################################################################################################
-
-$writer.WriteStartElement("Participant")
-
-		# NameOrNumber
-		$writer.WriteStartElement("NameOrNumber")
-		$writer.WriteString("$NameOrNumber")
-		$writer.WriteEndElement()
-		
-		# ParticipantCallType
-		$writer.WriteStartElement("ParticipantCallType")
-		$writer.WriteString("$ParticipantCallType")
-		$writer.WriteEndElement()
-		
-		# End Participant
-		$writer.WriteEndElement()
-
-
-################################################################################################
-
-# End Participants
-$writer.WriteEndElement()
-################################################################################################
-################################################################################################
-
-    # End Conference
-    $writer.WriteEndElement()
-
-# End SaveConference
-$writer.WriteEndElement()
-################################################################################################
-
-# End body
-################################################################################################
-$writer.WriteEndElement()
-$writer.Flush()
-$writer.Close()
+# XML file used to post for booking of conference
+[System.Xml.XmlDocument] $PostConferenceResult =
+@"
+<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Header>
+    <ContextHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <SendConfirmationMail>$SendConfirmationMail</SendConfirmationMail>
+      <ExcludeConferenceInformation>$ExcludeConferenceInformation</ExcludeConferenceInformation>
+      <ClientLanguage>$ClientLanguage</ClientLanguage>
+    </ContextHeader>
+    <ExternalAPIVersionSoapHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ClientVersionIn>$ClientVersionIn</ClientVersionIn>
+      <ClientIdentifierIn>$ClientIdentifierIn</ClientIdentifierIn>
+      <ClientLatestNamespaceIn>$ClientLatestNamespaceIn</ClientLatestNamespaceIn>
+      <NewServiceURL>$NewServiceURL</NewServiceURL>
+      <ClientSession>$ClientSession</ClientSession>
+    </ExternalAPIVersionSoapHeader>
+  </soap12:Header>
+  <soap12:Body>
+    <SaveConference xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <Conference>
+        <ConferenceID>$conferenceid</ConferenceID>
+        <Title>$title</Title>
+        <StartTimeUTC>$starttimeUTC</StartTimeUTC>
+        <EndTimeUTC>$endtimeUTC</EndTimeUTC>
+        <OwnerId>$ownerID</OwnerId>
+        <OwnerUserName>$OwnerUserName</OwnerUserName>
+        <OwnerFirstName>$OwnerFirstName</OwnerFirstName>
+        <OwnerLastName>$OwnerLastName</OwnerLastName>
+        <OwnerEmailAddress>$OwnerEmailAddress</OwnerEmailAddress>
+        <ConferenceType>$ConferenceType</ConferenceType>
+        <Bandwidth>$Bandwidth</Bandwidth>
+        <PictureMode>$PictureMode</PictureMode>
+        <Encrypted>$Encrypted</Encrypted>
+        <DataConference>$DataConference</DataConference>
+        <ShowExtendOption>$ShowExtendOption</ShowExtendOption>
+        <Password>$Password</Password>
+        <ISDNRestrict>$ISDNRestrict</ISDNRestrict>
+        <Participants>
+          <Participant>
+            <NameOrNumber>$NameOrNumber</NameOrNumber>
+            <ParticipantCallType>$ParticipantCallType</ParticipantCallType>
+          </Participant>
+        </Participants>
+      </Conference>
+    </SaveConference>
+  </soap12:Body>
+</soap12:Envelope>
+"@
 
 
 ################################################################################################
 #
-# POST Conference Request and get Response
+# POST Conference Request and get Response if Error 500, get new ClienSessionID
 #
 ################################################################################################
 
     # POST a request for an Conference
-    $PostRequestNewConference = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $XMLpath -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck)
-    
+    $PostRequestNewConference = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $PostConferenceResult -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
     # Get statuscode 200=OK 500
     $StatusCode = $PostRequestNewConference.StatusCode
-    
 
 # Write to log
-write-log -Level INFO -Message "Statuskod för bokningen 200=OK 500=ClientSession_Expired: $statuscode"
-
+write-log -Level INFO -Message "ClientSessionID OK (200=OK 500=Expired: $statuscode"
 
 # Read response and if Statuscode is 500 catch new ClientSessionID
 [xml]$ConferenceResult = $PostRequestNewConference
 
-$TMSConferenceID = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.ConferenceId
-
-# XML-path to 500 error file
-$ConferenceResult500 = Join-Path $PSScriptRoot $config.ConfigTMS.pathConferenceResult500
-
+# If error 500, extract new ClientSessionID and run the post one more time
 if ($statuscode -eq '500') 
 {
+  [xml]$ConferenceResult = $PostRequestNewConference
 
-  # Export Result to XML
-  $ConferenceResult | Export-Clixml -Path $ConferenceResult500
-
-  # Import XML and extract new ClientSessionID
-  [XML]$indata = Get-Content -Path $ConferenceResult500
-  [XML]$raw = $indata.Objs.XD
-  $newClientSessionID = $raw.Envelope.Body.Fault.detail.clientsessionid.'#text'
-
+  $newClientSessionID = $ConferenceResult.Envelope.Body.Fault.detail.clientsessionid.'#text'
+ 
   Write-Log -Level INFO -Message "New ClientSessionID $newClientSessionID "
   
-  # Import of request-xml to update with new ClientSessionID
-  $xml=New-Object XML
-  $xml.Load($XMLpath)
-  $node=$xml.Envelope.Header.ExternalAPIVersionSoapHeader
-  $node.ClientSession=$newClientSessionID
-  $xml.Save($XMLpath)
-
+  # XML file used to post for booking of conference
+  [System.Xml.XmlDocument] $PostConferenceResult =
+@"
+<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Header>
+    <ContextHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <SendConfirmationMail>$SendConfirmationMail</SendConfirmationMail>
+      <ExcludeConferenceInformation>$ExcludeConferenceInformation</ExcludeConferenceInformation>
+      <ClientLanguage>$ClientLanguage</ClientLanguage>
+    </ContextHeader>
+    <ExternalAPIVersionSoapHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ClientVersionIn>$ClientVersionIn</ClientVersionIn>
+      <ClientIdentifierIn>$ClientIdentifierIn</ClientIdentifierIn>
+      <ClientLatestNamespaceIn>$ClientLatestNamespaceIn</ClientLatestNamespaceIn>
+      <NewServiceURL>$NewServiceURL</NewServiceURL>
+      <ClientSession>$newClientSessionID</ClientSession>
+    </ExternalAPIVersionSoapHeader>
+  </soap12:Header>
+  <soap12:Body>
+    <SaveConference xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <Conference>
+        <ConferenceID>$conferenceid</ConferenceID>
+        <Title>$title</Title>
+        <StartTimeUTC>$starttimeUTC</StartTimeUTC>
+        <EndTimeUTC>$endtimeUTC</EndTimeUTC>
+        <OwnerId>$ownerID</OwnerId>
+        <OwnerUserName>$OwnerUserName</OwnerUserName>
+        <OwnerFirstName>$OwnerFirstName</OwnerFirstName>
+        <OwnerLastName>$OwnerLastName</OwnerLastName>
+        <OwnerEmailAddress>$OwnerEmailAddress</OwnerEmailAddress>
+        <ConferenceType>$ConferenceType</ConferenceType>
+        <Bandwidth>$Bandwidth</Bandwidth>
+        <PictureMode>$PictureMode</PictureMode>
+        <Encrypted>$Encrypted</Encrypted>
+        <DataConference>$DataConference</DataConference>
+        <ShowExtendOption>$ShowExtendOption</ShowExtendOption>
+        <Password>$Password</Password>
+        <ISDNRestrict>$ISDNRestrict</ISDNRestrict>
+        <Participants>
+          <Participant>
+            <NameOrNumber>$NameOrNumber</NameOrNumber>
+            <ParticipantCallType>$ParticipantCallType</ParticipantCallType>
+          </Participant>
+        </Participants>
+      </Conference>
+    </SaveConference>
+  </soap12:Body>
+</soap12:Envelope>
+"@
+  
   # POST a new request for an Conference
-  $PostRequestNewConference = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $XMLpath -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck)
+  $PostRequestNewConference = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $PostConferenceResult -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
     
-# Write log  
-
 # Catch the conference values after rerun of invoke-webrequest because of error 500
 [xml]$ConferenceResult = $PostRequestNewConference
 
 $TMSConferenceID = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.ConferenceId
-
 }
 
+$TMSConferenceID = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.ConferenceId
 
+# ConferenceID in Cisco TMS
+Write-Log -Level INFO -Message "TMSConferenceID $TMSConferenceID "
 ################################################################################################
 ################################################################################################
 # This section if for extracting the number to call to the conference
 ################################################################################################
 ################################################################################################
 
-# Create variable to use with invoke-request
-$xmlpathConferenceByID = Join-Path $PSScriptRoot $config.ConfigTMS.PathConferenceByID
-
-
-# Import of request-xml to update ConferenceID to get the number to call
-$xml=New-Object XML
-$xml.Load($xmlpathConferenceByID)
-$node=$xml.Envelope.Body.GetConferenceByID
-$node.ConferenceId=$TMSConferenceID
-$xml.Save($xmlpathConferenceByID)
-
+# XML file to post for more info about the conference to extract the number to call for the Conference.
+[System.Xml.XmlDocument] $XMLConferenceByID = @"
+<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Header>
+    <ContextHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <SendConfirmationMail>$SendConfirmationMail</SendConfirmationMail>
+      <ExcludeConferenceInformation>$ExcludeConferenceInformation</ExcludeConferenceInformation>
+      <ClientLanguage>$ClientLanguage</ClientLanguage>
+    </ContextHeader>
+    <ExternalAPIVersionSoapHeader xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ClientVersionIn>$ClientVersionIn</ClientVersionIn>
+      <ClientIdentifierIn>$ClientIdentifierIn</ClientIdentifierIn>
+      <ClientLatestNamespaceIn>$ClientLatestNamespaceIn</ClientLatestNamespaceIn>
+      <NewServiceURL>$NewServiceURL</NewServiceURL>
+      <ClientSession>string</ClientSession>
+    </ExternalAPIVersionSoapHeader>
+  </soap12:Header>
+  <soap12:Body>
+    <GetConferenceById xmlns="http://tandberg.net/2004/02/tms/external/booking/">
+      <ConferenceId>$TMSConferenceID</ConferenceId>
+    </GetConferenceById>
+  </soap12:Body>
+</soap12:Envelope>
+"@
 
 # POST a new request for an Conference
-$PostRequestConferenceByID = (Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -InFile $xmlpathConferenceByID -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck)
-
-# Create variable to file where to extract the field RawContent
-$xmlpathRawcontent = Join-Path $PSScriptRoot $config.ConfigTMS.PathConferenceByIDResult
+$PostRequestConferenceByID = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $XMLConferenceByID -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
 
 # Send the field RawContent to file
-$PostRequestConferenceByID.RawContent | Out-File $xmlpathRawcontent
+$PostRequestConferenceByID.RawContent | Out-File "$Tempfolder\$TMSConferenceID.xml"
 
 # Read variable in Configfile to which row in file to extract
 $RowInFile = $config.ConfigTMS.RowInFile 
 
 # Extract the row with the number to a variable
-$callinnumber = Get-Content $xmlpathRawcontent | Select-Object -Index $RowInFile
+$callinnumber = Get-Content "$Tempfolder\$TMSConferenceID.xml" | Select-Object -Index $RowInFile
 
 # Extract the number
-# $callinnumberFinal = $CallinnumberTrimmed.Substring(0,$digits)
+
 $CallinnumberFinal = $callinnumber -replace "\D+"
+
+write-log -Level INFO -Message "ConferenceCallInNumber: $callinnumberFinal"
+
+Remove-Item "$Tempfolder\$TMSConferenceID.xml" 
 
 ################################################################################################
 #
@@ -533,11 +455,12 @@ $emailsubject = $config.configtms.EmailSubject
 
 # The number to dail in
 $ConferenceNumber = $CallinnumberFinal
-#$StartTime = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.StartTimeUTC
-#$EndTime = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.EndTimeUTC
 
 # Pin-code to the meeting
 $PinCode = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.Password
+
+write-log -Level INFO -Message "pwd $pincode  "
+write-log -Level INFO -Message "Bookby: $bookedby"
 
 # Phonenumber for national participants
 $PhoneNumber = $config.configtms.Phonenumber
@@ -557,8 +480,6 @@ $EmailParams = @{
     Smtpserver = $config.ConfigTMS.EmailSMTP
     Subject    = "$emailsubject $BookingNumber  |  $(Get-Date -Format dd-MMM-yyyy)"
 }
-
-
 
 # Create html header whit stylesheet
 $html = @"
@@ -735,12 +656,6 @@ $html = $html + @"
 </html>
 "@
 
-# Send email and create htmlfile
-
-$testfile_html = Join-Path $PSScriptRoot $config.ConfigTMS.PathTESTHtmlOutFile
-
-
-	$html | Out-File $testfile_html -Force
-
-	Send-MailMessage @EmailParams -Body $html -BodyAsHtml -Encoding utf8
-
+# Send mail with info about the conference to "bookedby"
+Send-MailMessage @EmailParams -Body $html -BodyAsHtml -Encoding utf8
+write-log -Level INFO -Message "################################################################################################"
