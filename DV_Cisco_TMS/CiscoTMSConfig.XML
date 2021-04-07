@@ -7,11 +7,12 @@
 <!--Settings for XML Accounts and API and timeadjust-->
     <pathCiscoTMSAPI>https://tms.cygateviscom.se/tms/external/booking/bookingservice.asmx?wsdl</pathCiscoTMSAPI>
     <username>tms-api.test</username>
-    <pathPwdFile>keys/cryptfileremote.txt</pathPwdFile>
+    <pathPwdFile>keys/cryptfileRemote.txt</pathPwdFile>
     <TimeAdjust>-1</TimeAdjust> <!-- -1=withdraw one hour 1=forward one hour -->
 <!--Logfile, Name on the tempfolder -->    
-    <Logfile>ConferenceBooking.log</Logfile>
+    <Logfolder>Logs</Logfolder>
     <TempFolder>temp</TempFolder>
+    <DaysToSave>-15</DaysToSave>
 <!--Settings for participants-->    
     <ParticipantCallType>IP Video -></ParticipantCallType>
     <ParticipantDefaultName>Deltagare</ParticipantDefaultName>

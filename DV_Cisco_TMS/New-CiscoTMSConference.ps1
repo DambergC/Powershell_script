@@ -33,8 +33,6 @@
 		===========================================================================
 #>
 
-
-
 # Inputvalues needed to send a request for Conference.
 [CmdletBinding()]
 param
@@ -46,18 +44,36 @@ param
 	[Parameter(Mandatory = $true)]
 	[string]$Bookingnumber,
 	[Parameter(Mandatory = $true, HelpMessage = 'the one who booked the conference')]
-	[string]$BookedBy
+	[string]$BookedBy,
+  [Parameter(Mandatory = $true, HelpMessage = 'ServiceNumber of request')]
+	[string]$BillingCode
 )
 
-
-
-$scriptversion = '1.5'
-$scriptdate = '2021-03-31'
-
+# info about scriptversion and date
+$scriptversion = '1.6'
+$scriptdate = '2021-04-07'
 
 ################################################################################################
-# Functions in script
+
+# Path to configfile for script
+$absPath = Join-Path $PSScriptRoot "/CiscoTMSConfig.XML"
+
+# Get content of Configfile
+[xml]$config = Get-Content -Path $absPath
+
 ################################################################################################
+
+################################################################################################
+#
+# Functions in script and creation of temp- and log-folder
+#
+################################################################################################
+
+$logfolder = Join-Path $PSScriptRoot $config.ConfigTMS.logfolder
+
+$Today = get-date -Format 'yyyy-MM-dd'
+
+$logfile = "$logfolder\$Today.log"
 
 # Function to write to logfile
 Function Write-Log {
@@ -79,44 +95,74 @@ Function Write-Log {
   }
 
 ################################################################################################
-
-# Path to configfile for script
-$absPath = Join-Path $PSScriptRoot "/CiscoTMSConfig.XML"
-
-# Get content of Configfile
-[xml]$config = Get-Content -Path $absPath
-
+# Log-folder
 ################################################################################################
+$logfolder = Join-Path $PSScriptRoot $config.ConfigTMS.logfolder
 
-# Path to logfile
-$logfile = Join-Path $PSScriptRoot $config.ConfigTMS.Logfile
+# create logfolder if not exist
+if (-not (Test-Path -path $logfolder -pathtype Container)) 
 
-write-log -Level INFO -Message "Script version:$scriptversion ScriptDate:$scriptdate"
+{
+      try  
 
-# Write to log
-write-log -Level INFO -Message "################################################################################################"
-write-log -Level INFO -Message "Script version:$scriptversion ScriptDate:$scriptdate"
-write-log -Level INFO -Message "New Conference Booking $stamp"
-write-log -Level INFO -Message "################################################################################################"
-write-log -Level INFO -Message "Path to config: $abspath"
-write-log -Level INFO -Message "psscriptroot: $psscriptroot"
+      {
+        New-Item -Path $logfolder -ItemType Directory -ErrorAction Stop | Out-Null #-Force
+      }
+
+      catch 
+
+      {
+        Write-host 'Cant create logfile'
+        exit
+      }
+
+}
+
+# Get todays date to name the logfile
+$Today = get-date -Format 'yyyy-MM-dd'
+
+# Path to todays logfile
+$logfile = "$logfolder\$Today.log"
+write-log -Level INFO -Message "Logfolder $logfolder"
+
+# Remove old logfiles
+$DaysToSave = $config.ConfigTMS.DaysToSave
+$limit = (Get-Date).AddDays($DaysToSave)
+$path = $logfolder
+
+# Delete files older than the $limit.
+Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.CreationTime -lt $limit } | Remove-Item -Force
 
 ################################################################################################
 #
-# Create Temp-folder if not exist
+# Start writing to logfile
 #
 ################################################################################################
 
+write-log -Level INFO -Message "################################################################################################"
+write-log -Level INFO -Message "Scriptversion: $scriptversion"
+write-log -Level INFO -Message "Scriptdate: $scriptdate"
+write-log -Level INFO -Message "################################################################################################"
+
+################################################################################################
+# Temp-folder
+################################################################################################
+
+# Path to tempfolder
 $Tempfolder = Join-Path $PSScriptRoot $config.ConfigTMS.Tempfolder
 
-
+# Create tempfolder if not exist
 if (-not (Test-Path -path $Tempfolder -pathtype Container)) {
     
     try {
         New-Item -Path $Tempfolder -ItemType Directory -ErrorAction Stop | Out-Null #-Force
     }
     catch {
-        Write-Error -Message "Unable to create directory '$Tempfolder'. Error was: $_" -ErrorAction Stop
+        #Write-Error -Message "Unable to create directory '$Tempfolder'. Error was: $_" -ErrorAction Stop
+        Write-log -Level ERROR -Message "Unable to create directory '$Tempfolder'. Error was: $_"
+        write-log -Level ERROR -Message "Errorcode 100"
+        Write-host "100"
+        exit
     }
     write-log -level INFO -Message "Successfully created tempfolder $Tempfolder"
 
@@ -124,6 +170,10 @@ if (-not (Test-Path -path $Tempfolder -pathtype Container)) {
 else {
   write-log -level INFO -Message  "Directory already exist $Tempfolder"
 }
+
+# Write to log
+write-log -Level INFO -Message "Path to config: $abspath"
+write-log -Level INFO -Message "psscriptroot: $psscriptroot"
 
 ################################################################################################
 #
@@ -181,7 +231,21 @@ $apipath = $config.ConfigTMs.pathCiscoTMSAPI
 
 write-log -Level INFO -Message "Address to Cisco APi $apipath"
 
-$PostRequest = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $original_GetDefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential -UseBasicParsing
+try
+{
+  $PostRequest = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $original_GetDefaultConferenceXML -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
+}
+catch 
+
+{
+  Write-Log -level ERROR -Message "$error[0].InvocationInfo.line"
+  write-log -Level ERROR -Message "Errorcode 200.1"
+  Write-host "200.1"
+
+ exit
+
+ }
+
 
 # Read XML-response of default values to be used when POST a request for a Conference
 
@@ -288,6 +352,7 @@ $ParticipantCallType = $config.configtms.ParticipantCallType
         <DataConference>$DataConference</DataConference>
         <ShowExtendOption>$ShowExtendOption</ShowExtendOption>
         <Password>$Password</Password>
+        <BillingCode>$billingcode</BillingCode>
         <ISDNRestrict>$ISDNRestrict</ISDNRestrict>
         <Participants>
           <Participant>
@@ -309,7 +374,25 @@ $ParticipantCallType = $config.configtms.ParticipantCallType
 ################################################################################################
 
     # POST a request for an Conference
+   try 
+   {
     $PostRequestNewConference = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $PostConferenceResult -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
+  
+  }
+  catch 
+  
+  {
+    #Write-Warning $Error[0]
+  
+    Write-Log -level ERROR -Message "$error[0].InvocationInfo.line"
+    write-log -Level ERROR -Message "Errorcode 200.2"
+    Write-host "200.2"
+  
+   exit
+  
+   }
+  
+  
     # Get statuscode 200=OK 500
     $StatusCode = $PostRequestNewConference.StatusCode
 
@@ -320,6 +403,7 @@ write-log -Level INFO -Message "ClientSessionID OK (200=OK 500=Expired: $statusc
 [xml]$ConferenceResult = $PostRequestNewConference
 
 # If error 500, extract new ClientSessionID and run the post one more time
+
 if ($statuscode -eq '500') 
 {
   [xml]$ConferenceResult = $PostRequestNewConference
@@ -366,6 +450,7 @@ if ($statuscode -eq '500')
         <DataConference>$DataConference</DataConference>
         <ShowExtendOption>$ShowExtendOption</ShowExtendOption>
         <Password>$Password</Password>
+        <BillingCode>$billingcode</BillingCode>
         <ISDNRestrict>$ISDNRestrict</ISDNRestrict>
         <Participants>
           <Participant>
@@ -380,8 +465,28 @@ if ($statuscode -eq '500')
 "@
   
   # POST a new request for an Conference
-  $PostRequestNewConference = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $PostConferenceResult -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
-    
+
+      try 
+      {  
+        $PostRequestNewConference = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $PostConferenceResult -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
+        
+          
+      }
+      catch 
+
+      {
+        #Write-Warning $Error[0]
+
+        Write-Log -level ERROR -Message "$error[0].InvocationInfo.line"
+        write-log -Level ERROR -Message "Errorcode 200.3"
+        Write-host "200.3"
+
+      exit
+
+      }
+  
+
+
 # Catch the conference values after rerun of invoke-webrequest because of error 500
 [xml]$ConferenceResult = $PostRequestNewConference
 
@@ -425,7 +530,28 @@ Write-Log -Level INFO -Message "TMSConferenceID $TMSConferenceID "
 "@
 
 # POST a new request for an Conference
+
+try 
+
+{
+
 $PostRequestConferenceByID = Invoke-WebRequest -Uri $config.ConfigTMs.pathCiscoTMSAPI -Body $XMLConferenceByID -ContentType 'text/xml' -Method POST -Credential $credential -skiphttpErrorcheck
+
+  
+}
+catch 
+
+{
+  #Write-Warning $Error[0]
+
+  Write-Log -level ERROR -Message "$error[0].InvocationInfo.line"
+  write-log -Level ERROR -Message "Errorcode 200.4"
+  Write-host "200.4"
+
+ exit
+
+ }
+
 
 # Send the field RawContent to file
 $PostRequestConferenceByID.RawContent | Out-File "$Tempfolder\$TMSConferenceID.xml"
@@ -459,8 +585,9 @@ $ConferenceNumber = $CallinnumberFinal
 # Pin-code to the meeting
 $PinCode = $ConferenceResult.Envelope.Body.SaveConferenceResponse.SaveConferenceResult.Password
 
-write-log -Level INFO -Message "pwd $pincode  "
-write-log -Level INFO -Message "Bookby: $bookedby"
+write-log -Level INFO -Message "Password for meeting: $pincode"
+write-log -Level INFO -Message "Email to requester: $bookedby"
+write-log -Level INFO -Message "Referencenumber: $billingcode"
 
 # Phonenumber for national participants
 $PhoneNumber = $config.configtms.Phonenumber
@@ -657,5 +784,26 @@ $html = $html + @"
 "@
 
 # Send mail with info about the conference to "bookedby"
+
+try 
+
+{
+
 Send-MailMessage @EmailParams -Body $html -BodyAsHtml -Encoding utf8
+
+  
+}
+catch 
+
+{
+  #Write-Warning $Error[0]
+
+  Write-Log -level ERROR -Message "$error[0].InvocationInfo.line"
+  write-log -Level ERROR -Message "Errorcode 300"
+  Write-host "300"
+
+ exit
+
+ }
+
 write-log -Level INFO -Message "################################################################################################"
