@@ -1,0 +1,1 @@
+# script to get dns-info for multiple ip-addresses or computernames
