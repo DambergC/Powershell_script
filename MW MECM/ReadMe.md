@@ -1,7 +1,7 @@
 <B>Script to Create one or more Maintance Windows for a Collection in MECM</b>
 <p>
 If you need to create one or more Maintance Windows in MECM for a Collection you can use this script.
-You will have the following options
+<p>You will have the following options
 <ol>
   <li>CollID - CollectionID
   <li>Offweek - How many weeks after patch tuesday
@@ -15,3 +15,4 @@ You will have the following options
   <li>ClearOldMW - If you want to clean up old Maintance Window for the Collection
   <li>ApplyTo - If you want Any, TaskSequence or Only SoftwareUpdates to be controled by Maintance Window  
 </ol>    
+<p>From your input the script will calculate Patch Tuesday for the month and set start- and stoptime for the maintance Window.
