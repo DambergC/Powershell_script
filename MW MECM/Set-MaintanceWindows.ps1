@@ -210,12 +210,4 @@ Catch {
 
 }
 
-If([int]$OffSetDays -gt 7){
-    $OffSetWeeks = "{0:N0}" -f ([int]$OffSetDays / 7)   
-    $OffSetDays = [int]$OffSetDays - ([int]$OffSetWeeks*7)                
-}
-Else{
-    $OffSetWeeks = 0
-}
-
 Set-Location $PSScriptRoot
