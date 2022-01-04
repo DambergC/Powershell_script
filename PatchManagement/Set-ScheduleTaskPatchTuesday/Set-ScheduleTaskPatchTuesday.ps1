@@ -1,21 +1,20 @@
 <#
 .SYNOPSIS
-This script configures multiple Maintenance Windows for a collection.The schedule is based on offset-settings with Patch Tuesday as base.
+This script creates x-numbers of scheduled task based on when patch tuesday occurs.
     
 .DESCRIPTION
-This script give you options to delete existing Maintance Windows on collection, decide if the Maintance Windows should be for Any installation, Task sequence
-or only SoftwareUpdates.
+This script give you the option to create multiple scheduled task to send a mail x-days after patch tuesday.
 
 You can also decide which month the Maintance Windows should be configured for.
 
 Some of the funcionality has been borrowed from Daniel Engberg´s script, created 2018 which he borrowed som functionality from Octavian Cordos' script, created in 2015.
 
-####################
+############################################################
 Christian Damberg
 www.damberg.org
 Version 1.0
 2021-12-22
-####################
+############################################################
     
 .EXAMPLE
 .\Set-MaintanceWindows.ps1 -CollID ps100137 -OffSetWeeks 1 -OffSetDays 5 -AddStartHour 18 -AddStartMinutes 0 -AddEndHour 4 -AddEndMinutes 0 -PatchMonth "1","2","3","4","5","6","7","8","9","10","11" -patchyear 2022 -ClearOldMW Yes -ApplyTo SoftWareUpdatesOnly
@@ -25,7 +24,9 @@ Will create a Maintenance Window with Patch Tuesday + 1 week and 5 days for coll
 All scripts and other Powershell references are offered AS IS with no warranty.
 These script and functions are tested in my environment and it is recommended that you test these scripts in a test environment before using in your production environment.
 #>
-
+############################################################
+# Parameters
+############################################################
 
 PARAM(
     [int]$OffSetWeeks,
@@ -40,14 +41,12 @@ PARAM(
     [string]$FolderName
     )  
 
-#region Initialize
+############################################################
+# region functions
+############################################################
 
 
-#endregion
-
-#region functions
-
-#Set Patch Tuesday for a Month 
+# Set Patch Tuesday for a Month 
 Function Get-PatchTuesday ($Month,$Year)  
  { 
     $FindNthDay=2 #Aka Second occurence 
@@ -62,12 +61,9 @@ Function Get-PatchTuesday ($Month,$Year)
     Write-Log -Message "Patch Tuesday this month is $PatchDay" -Severity 1 -Component "Set Patch Tuesday"
    Write-Output "Patch Tuesday this month is $PatchDay"
  }  
- 
-#Remove all existing Maintenance Windows for a Collection 
 Set-Location $PSScriptRoot
- 
 
-#Function for append events to logfile located c:\windows\logs
+# Function for append events to logfile located c:\windows\logs
 Function Write-Log
 {
     PARAM(
@@ -83,6 +79,7 @@ Function Write-Log
         "<![LOG[$Message]LOG]!><time=$([char]34)$Date$($TimeZoneBias.bias)$([char]34) date=$([char]34)$date2$([char]34) component=$([char]34)$Component$([char]34) context=$([char]34)$([char]34) type=$([char]34)$Severity$([char]34) thread=$([char]34)$([char]34) file=$([char]34)$([char]34)>"| Out-File -FilePath "$Logpath\Set-MaintenanceWindows.log" -Append -NoClobber -Encoding default
 
 }
+
 # Function to create a folder in Scheduled Task
 Function New-ScheduledTaskFolder
     {
@@ -96,39 +93,36 @@ Function New-ScheduledTaskFolder
         Catch { $null = $rootFolder.CreateFolder($taskpath) }
         Finally { $ErrorActionPreference = "continue" } }
 
-
-#endregion
-
-#region Parameters
-
+# Misc variables needed in script
 $ErrorMessage = $_.Exception.Message
-
-#endregion
-
-
-
 $MonthArray = New-Object System.Globalization.DateTimeFormatInfo 
 $MonthNames = $MonthArray.MonthNames 
 
+# Create a subfolder in Scheduled Task
 New-ScheduledTaskFolder $FolderName
 
-#Create Maintance Windows for for every month specified in variable Patchmonth
+# Create Scheduled Task for for every month specified in variable Patchmonth
 foreach ($Monthnumber in $PatchMonth) 
-
 {
-    #Set Patch Tuesday for each Month 
+    # Set Patch Tuesday for each Month 
     $PatchDay = Get-PatchTuesday $Monthnumber $PatchYear
                  
-    #Set Maintenance Window Naming Convention (Months array starting from 0 hence the -1) 
+    # Set month number correct to display name later in script (Months array starting from 0 hence the -1) 
     $displaymonth = $Monthnumber - 1 
 
-    #Set Device Collection Maintenace interval  
+    # Set starttime for schedule task
     $StartTime=$PatchDay.AddDays($OffSetDays).AddHours($AddStartHour).AddMinutes($AddStartMinutes)
-
+    
+    ############################################################
+    # This section must be edited before running the script
+    ############################################################
+    # Action in Scheduled Task
     $taskAction = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
     -Argument '-File C:\scripts\Get-LatestAppLog.ps1'
-        
+    ############################################################
+    # Done
+    ############################################################
     # Create a new trigger (Daily at 3 AM)
     $tasktrigger = New-ScheduledTaskTrigger -At $StartTime -Once
 
@@ -136,7 +130,7 @@ foreach ($Monthnumber in $PatchMonth)
     $taskName = "Patchstatus-Mail " +$MonthNames[$displaymonth] + " "+ $patchyear
 
     # Describe the scheduled task.
-    $description = "Export the 10 newest events in the application log"
+    $description = "Mail - Status on downloaded and deployed patches"
 
         Try 
         {
