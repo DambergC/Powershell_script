@@ -147,7 +147,8 @@ forEach ($item in $updates)
 #########################################################
 # Create a row in the email to present numbers of updates
 #########################################################
-$Numbersofupdates = "Totalt antal patchar från Microsoft som finns i Uppdateringspaketet " + $UpdateGroupName + " = " + $result.count
+#$Numbersofupdates = "Totalt antal patchar från Microsoft som finns i Uppdateringspaketet " + $UpdateGroupName + " = " + $result.count
+$Numbersofupdates = "Total numbers of updates from Microsoft that exist in updatepackage " + $UpdateGroupName + " = " + $result.count
 
 #########################################################
 # Create the list of updates sorted and only in the limit
@@ -249,15 +250,15 @@ $pre = @"
 <br>
 <img src='cid:logo.png' height="50">
 <br>
-<p><b>Patchar tillgängliga</b><br> 
-<p>Patchar ska finnas tillgänliga från onsdag vecka $weeknumber kl.15.00</p>
+<p><b>New updates!</b><br> 
+<p>Updates will be available from wednesday week $weeknumber kl.15.00</p>
 <p><b>Schema</b><br>
-<p>Patchning av Servrar sker enligt följande schema:</p>
-<p><ol>Test - Vecka $weeknumber - varje natt mellan 03.00 - 08:00 (då det finns patchar att installera)</ol></p>
-<p><ol>Prod - Vecka $nextweeknumber - Majoritet sker mellan Lördag 23.00 till Söndag 09.00</ol></p>
-<p><ol>AX - Hanteras av förvaltningen.</ol></p>
-<p><b>Patchar från Microsoft</b><br>
-<p>Följande patchar från Microsoft är nedladdade till Updategrupp <b><i>$UpdateGroupName</i></b> Sedan $limit</p>
+<p>The updates will be installed as follows:</p>
+<p><ol>Test - Week $weeknumber - Every night between 03.00 - 08:00 (If any updates are published)</ol></p>
+<p><ol>Prod - Week $nextweeknumber - Majority will be installed saturday 11.00pm till Sunday 09.00am</ol></p>
+<p><ol>AX - Managed manually by the administration.</ol></p>
+<p><b>Patchar From Microsoft</b><br>
+<p>The following updates are downloaded and published in updategroup <b><i>$UpdateGroupName</i></b> since $limit</p>
 <p>$Numbersofupdates</p>
 "@
 
@@ -265,9 +266,9 @@ $pre = @"
 # Footer of the email
 #########################################################
 $post = @"
-<p>Rapporten skapad $((Get-Date).ToString()) från <b><i>$($Env:Computername)</i></b></p>
-<p>Script created by:<br><a href="mailto:christian@damberg.org">Christian Damberg</a><br>
-<a href="https://www.damberg.org">www.damberg.org</a>
+<p>Raport created $((Get-Date).ToString()) from <b><i>$($Env:Computername)</i></b></p>
+<p>Script created by:<br><a href="mailto:Your Email">Your name</a><br>
+<a href="https://your blog">your description of your blog</a>
 "@
 
 ##########################################################################################
