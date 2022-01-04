@@ -19,22 +19,22 @@
 $LimitDays = '-15'
 #
 # The sitecode for Configmgr
-$SiteCode = 'sod:'
+$SiteCode = '<sitecode>'
 #
 # The Name on the updategroup
-$UpdateGroupName = 'ADR Server'
+$UpdateGroupName = '<the name of your update group>'
 #
 # The no-reply emailaddress
-$Emailfrom = 'Your no-reply-address'
+$Emailfrom = '<Your no-reply-address>'
 #
 # The email (group) who will receive the report
-$email_Error = 'Your mail to send when error happens'
+$email_Error = '<Your mail to send when error happens>'
 #
 # The email when the script cant find any updates
-$email_noErrors = 'Your mail to the mailgroup'
+$email_noErrors = '<Your mail to the mailgroup>'
 #
 # SMTP-server
-$smtp = 'Your SMTP-Server'
+$smtp = '<Your SMTP-Server>'
 
 #########################################################
 # the function the extract the week number
