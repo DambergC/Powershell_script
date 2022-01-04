@@ -15,4 +15,4 @@ If you need to create one or more Maintance Windows in MECM for a Collection you
   <li>ClearOldMW - If you want to clean up old Maintance Window for the Collection
   <li>ApplyTo - If you want Any, TaskSequence or Only SoftwareUpdates to be controled by Maintance Window  
 </ol>    
-<p>From your input the script will calculate Patch Tuesday for the month and set start- and stoptime for the maintance Window.
+<p>From your input the script will calculate Patch Tuesday for the month and set start- and endtime for the maintance Window.
