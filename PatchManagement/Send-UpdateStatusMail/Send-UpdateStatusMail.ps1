@@ -35,7 +35,7 @@ if (-not(Get-Module -name Send-Mailkitmessage)) {
     Install-Module -Name Send-MailKitMessage
 }
 
-Get-InstalledModule
+#Get-InstalledModule
 
 # To run the script you must be on ps-drive for MEMCM
 Push-Location
@@ -118,7 +118,7 @@ $header = @"
 # Text added to mail before list of patches
 ######################################################################
 $pre = @"
-<img src='cid:cygate.png' height="50">
+<img src='cid:logo.png' height="50">
 <p>This report list status for updatedeployments from site $SiteCodeFromXML owned by $EmailCustomer.</p>
 <p>$title</p>
 "@
@@ -176,7 +176,7 @@ $HTMLBody=[string]$StatusFound
 
 #attachment list ([System.Collections.Generic.List[string]], optional)
 $AttachmentList=[System.Collections.Generic.List[string]]::new()
-$AttachmentList.Add("C:\scripts\GEt-UpdateStatusXML\cygate.png")
+$AttachmentList.Add("C:\scripts\GEt-UpdateStatusXML\logo.png")
 
 # Mailparameters
 $Parameters=@{
