@@ -82,25 +82,7 @@ Function Get-PatchTuesday ($Month,$Year)
     $PatchDay=$StrtMonth.AddDays(7*($FindNthDay-1)) 
     return $PatchDay
     Write-Log -Message "Patch Tuesday this month is $PatchDay" -Severity 1 -Component "Set Patch Tuesday"
-   <#
-   .SYNOPSIS
-   Short description
-   
-   .DESCRIPTION
-   Long description
-   
-   .PARAMETER Month
-   Parameter description
-   
-   .PARAMETER Year
-   Parameter description
-   
-   .EXAMPLE
-   An example
-   
-   .NOTES
-   General notes
-   #>Write-Output "Patch Tuesday this month is $PatchDay"
+
  }  
  
 #Remove all existing Maintenance Windows for a Collection 
