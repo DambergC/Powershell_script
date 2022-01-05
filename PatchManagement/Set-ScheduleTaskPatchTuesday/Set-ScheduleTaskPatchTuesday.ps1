@@ -5,10 +5,6 @@ This script creates x-numbers of scheduled task based on when patch tuesday occu
 .DESCRIPTION
 This script give you the option to create multiple scheduled task to send a mail x-days after patch tuesday.
 
-You can also decide which month the Maintance Windows should be configured for.
-
-Some of the funcionality has been borrowed from Daniel Engberg´s script, created 2018 which he borrowed som functionality from Octavian Cordos' script, created in 2015.
-
 ############################################################
 Christian Damberg
 www.damberg.org
@@ -17,9 +13,9 @@ Version 1.0
 ############################################################
     
 .EXAMPLE
-.\Set-MaintanceWindows.ps1 -CollID ps100137 -OffSetWeeks 1 -OffSetDays 5 -AddStartHour 18 -AddStartMinutes 0 -AddEndHour 4 -AddEndMinutes 0 -PatchMonth "1","2","3","4","5","6","7","8","9","10","11" -patchyear 2022 -ClearOldMW Yes -ApplyTo SoftWareUpdatesOnly
-Will create a Maintenance Window with Patch Tuesday + 1 week and 5 days for collection with ID PS100137 for every month except december in 2022. The script also delete old Maintance Windows and the new Maintance Windows are only for SoftwareUpdates.
-    
+.\Set-ScheduleTaskPatchTuesday.ps1 -OffSetWeeks 0 -OffSetDays 2 -AddStartHour 12 -AddStartMinutes 0 -PatchMonth "1","2","3","4","5","6","7","8","9","10","11" -patchyear 2022 -FolderName 'PatchTuesday'
+Will create Schedule Task for January to November to send mail two days after patch tuesday at noon.
+
 .DISCLAIMER
 All scripts and other Powershell references are offered AS IS with no warranty.
 These script and functions are tested in my environment and it is recommended that you test these scripts in a test environment before using in your production environment.
@@ -119,7 +115,7 @@ foreach ($Monthnumber in $PatchMonth)
     # Action in Scheduled Task
     $taskAction = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
-    -Argument '-File C:\scripts\Get-LatestAppLog.ps1'
+    -Argument '-File C:\scripts\Send-UpdateDeployedMail.ps1'
     ############################################################
     # Done
     ############################################################
