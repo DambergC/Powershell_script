@@ -35,6 +35,10 @@ $email_noErrors = '<Your mail to the mailgroup>'
 #
 # SMTP-server
 $smtp = '<Your SMTP-Server>'
+# Portnumber
+$Portnumber = '25'
+# Customer
+$Customer = 'Name of company'
 
 #########################################################
 # the function the extract the week number
@@ -224,6 +228,9 @@ if ($UpdatesFound -eq $null )
     $EmailTo = $email_Error
 
     $UpdatesFound = @"
+    <br>
+<img src='cid:logo.png' height="50">
+<br>
     <B>No updates downloaded or deployed since $limit</B><br><br>
     <p></p>
 <p>Action needed from third-line support</p>
@@ -293,7 +300,7 @@ $Credential=[System.Management.Automation.PSCredential]::new("Username", (Conver
 $SMTPServer=$smtp
 
 #port ([int], required)
-$Port=25
+$Port=$portnumber
 
 #sender ([MimeKit.MailboxAddress] http://www.mimekit.net/docs/html/T_MimeKit_MailboxAddress.htm, required)
 $From=[MimeKit.MailboxAddress]$Emailfrom
@@ -317,7 +324,7 @@ $BCCList.Add([MimeKit.InternetAddress]"BCCRecipient1EmailAddress")
 if ($UpdatesFound -ne $null )
 {
 #subject ([string], required)
-$Subject=[string]"Serverpatchning Södra $monthname $year"
+$Subject=[string]"Serverpatchning $customer $monthname $year"
 }
 else 
 {
