@@ -31,7 +31,7 @@ $Emailfrom = '<Your no-reply-address>'
 $email_Error = '<Your mail to send when error happens>'
 #
 # The email when the script cant find any updates
-$email_noErrors = '<Your mail to the mailgroup>'
+$email_Success = '<Your mail to the mailgroup>'
 #
 # SMTP-server
 $smtp = '<Your SMTP-Server>'
@@ -225,7 +225,7 @@ if ($UpdatesFound -eq $null )
 
 
     #Emailsettings when updates equals none
-    $EmailTo = $email_Error
+    $EmailTo = $email_Success
 
     $UpdatesFound = @"
     <br>
