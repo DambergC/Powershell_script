@@ -114,7 +114,7 @@ foreach ($Monthnumber in $PatchMonth)
     ############################################################
     # Action in Scheduled Task
     $taskAction = New-ScheduledTaskAction `
-    -Execute 'powershell.exe' `
+    -Execute 'pwsh.exe' `
     -Argument '-File C:\scripts\Send-UpdateDeployedMail.ps1'
     ############################################################
     # Done
