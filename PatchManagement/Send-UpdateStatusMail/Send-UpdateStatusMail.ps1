@@ -176,7 +176,7 @@ $HTMLBody=[string]$StatusFound
 
 #attachment list ([System.Collections.Generic.List[string]], optional)
 $AttachmentList=[System.Collections.Generic.List[string]]::new()
-$AttachmentList.Add("C:\scripts\GEt-UpdateStatusXML\logo.png")
+$AttachmentList.Add("$PSScriptRoot\logo.png")
 
 # Mailparameters
 $Parameters=@{
