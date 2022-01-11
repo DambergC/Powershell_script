@@ -7,7 +7,7 @@
 #   back from todays date you want to check.
 #   Skripts require Powershell 7 and send-mailkitmessage module https://www.powershellgallery.com/packages/Send-MailKitMessage
 #.EXAMPLE
-#   Get-UpdateGroupMemberXML.ps1
+#   Send-UpdateStatusMail.ps1
 ######################################################################
 # Configuration for the script
 ######################################################################
