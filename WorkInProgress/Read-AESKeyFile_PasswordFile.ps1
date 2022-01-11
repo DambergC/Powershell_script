@@ -1,4 +1,4 @@
-# Define variables
+# Define variables.
 $Directory = "C:\"
 $KeyFile = Join-Path $Directory  "AES_KEY_FILE.key"
 $PasswordFile = Join-Path $Directory "AES_PASSWORD_FILE.txt"
