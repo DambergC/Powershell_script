@@ -34,12 +34,20 @@ PARAM(
     [string[]]$PatchMonth,
     [Parameter(Mandatory=$True)]
     [int]$patchyear,
-    [string]$FolderName
+    [string]$FolderName,
+    [string]$UserName,
+    [string]$PathPasswordFile
     )  
 
 ############################################################
 # region functions
 ############################################################
+
+# Read passwordfile
+$Encrypted = Get-Content $PathPasswordFile | ConvertTo-SecureString
+
+# Create variable with username and password
+$Credential = New-Object System.Management.Automation.PsCredential($UserName, $Encrypted)
 
 
 # Set Patch Tuesday for a Month 
@@ -131,7 +139,7 @@ foreach ($Monthnumber in $PatchMonth)
         Try 
         {
             # Register the scheduled task
-            Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Description $description -TaskPath $FolderName -User system
+            Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Description $description -TaskPath $FolderName -User $username -Password $Credential
 
             $StartTime
             #Write-Log -Message "Created Maintenance Window $NewMWName for Collection $MWCollection" -Severity 1 -Component "New Maintenance Window"

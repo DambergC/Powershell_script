@@ -22,11 +22,11 @@ Import-Module $env:SMS_ADMIN_UI_PATH.Replace("\bin\i386","\bin\configurationmana
 $SiteCode = Get-PSDrive -PSProvider CMSITE
 Set-Location "$($SiteCode.Name):\"
  
-$Collection = "SUM Workstations Pilot"
+$Collection = "MW-test"
 $ADRName = "Client Updates 2015"
 $SiteServer = $Env:COMPUTERNAME
 $SiteServerFQDN = "$SiteServer.$Env:USERDNSDOMAIN"
-$DeployPackageLocation = "\\$SiteServer\Sources\Software Updates\$ADRName"
+$DeployPackageLocation = "\\$SiteServer\repository\Software Updates\$ADRName"
  
 $Products = "Windows 7","Office 2010"
 $UpdateClassifications = "Critical Updates","Security Updates","Service Packs","Update Rollups","Updates"
@@ -78,7 +78,6 @@ Else
     -AllowRestart $True `
     -AllowSoftwareInstallationOutsideMaintenanceWindow $True `
     -AllowUseMeteredNetwork $True `
-    -AvailableImmediately $False `
     -AvailableTime 7 `
     -AvailableTimeUnit Days `
     -BulletinId "MS" `
@@ -118,3 +117,4 @@ Else
     #-MicrosoftAsVendor $True `
     #-ArticleId "100" `
     #-Location $DeployPackageLocation `
+    #-AvailableImmediately $False `
