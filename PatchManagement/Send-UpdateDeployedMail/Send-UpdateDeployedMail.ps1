@@ -225,7 +225,9 @@ if ($UpdatesFound -eq $null )
 
 
     #Emailsettings when updates equals none
-    $EmailTo = $email_Success
+    $EmailTo = $email_Error
+    
+    
 
     $UpdatesFound = @"
     <br>
@@ -248,7 +250,7 @@ else
 #########################################################
 # Emailsettings when updates more then one downloaded
 #########################################################
-$EmailTo = $email_noErrors
+$EmailTo = $email_Success
 
 #########################################################
 # The top of the email
