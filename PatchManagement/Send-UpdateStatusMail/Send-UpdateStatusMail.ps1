@@ -7,8 +7,7 @@
 #   back from todays date you want to check.
 #   Skripts require Powershell 7 and send-mailkitmessage module https://www.powershellgallery.com/packages/Send-MailKitMessage
 #.EXAMPLE
-#   Get-UpdateGroupMemberXML.ps1 -script configname
-
+#   Get-UpdateGroupMemberXML.ps1
 ######################################################################
 # Configuration for the script
 ######################################################################
@@ -16,8 +15,7 @@ $LimitFrom = '-10'
 $SiteCode = '<Sitecode:>'
 $UpdateGroupName = '<UpdateGroupName>'
 $Emailfrom = '<Your no-replay address>
-#$EmailTo = '<Recipients mailgroupaddress>'
-$EmailToCC = $config.scriptsettings.EmailToCC
+$EmailTo = '<Recipients mailgroupaddress>'
 $EmailCustomer = '<the name of your customer>'
 $EmailSmtp = '<your smtpserver>'
 $mailport = '25'
