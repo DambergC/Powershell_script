@@ -5,7 +5,7 @@
 #   Lists all assigned software updates in a configuration manager 2012 software update group that is selected 
 #   from the list of available update groups or provided as a command line option
 #.EXAMPLE
-#   Monthly_UpdateMail.ps1
+#   Send-UpdateDeployedMail.ps1
 #
 #   Skript created by Christian Damberg
 #   christian@damberg.org
