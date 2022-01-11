@@ -17,28 +17,14 @@
 #
 # Numbers of days backwards you want to check for updates in updategroup
 $LimitDays = '-15'
-#
-# The sitecode for Configmgr
 $SiteCode = '<sitecode>'
-#
-# The Name on the updategroup
 $UpdateGroupName = '<the name of your update group>'
-#
-# The no-reply emailaddress
-$Emailfrom = '<Your no-reply-address>'
-#
-# The email (group) who will receive the report
-$email_Error = '<Your mail to send when error happens>'
-#
-# The email when the script cant find any updates
-$email_Success = '<Your mail to the mailgroup>'
-#
-# SMTP-server
-$smtp = '<Your SMTP-Server>'
-# Portnumber
-$Portnumber = '25'
-# Customer
-$Customer = 'Name of company'
+$MailFrom = '<Your no-reply-address>'
+$Mail_Error = '<Your mail to send when error happens>'
+$Mail_Success = '<Your mail to the mailgroup>'
+$MailSMTP = '<Your SMTP-Server>'
+$MailPortnumber = '25'
+$MailCustomer = 'Name of company'
 
 #########################################################
 # the function the extract the week number
@@ -225,7 +211,7 @@ if ($UpdatesFound -eq $null )
 
 
     #Emailsettings when updates equals none
-    $EmailTo = $email_Error
+    $EmailTo = $Mail_Error
     
     
 
@@ -250,7 +236,7 @@ else
 #########################################################
 # Emailsettings when updates more then one downloaded
 #########################################################
-$EmailTo = $email_Success
+$EmailTo = $Mail_Success
 
 #########################################################
 # The top of the email
@@ -299,17 +285,17 @@ $UseSecureConnectionIfAvailable=$false
 $Credential=[System.Management.Automation.PSCredential]::new("Username", (ConvertTo-SecureString -String "Password" -AsPlainText -Force))
 
 #SMTP server ([string], required)
-$SMTPServer=$smtp
+$SMTPServer=$MailSMTP
 
 #port ([int], required)
-$Port=$portnumber
+$Port=$MailPortnumber
 
 #sender ([MimeKit.MailboxAddress] http://www.mimekit.net/docs/html/T_MimeKit_MailboxAddress.htm, required)
-$From=[MimeKit.MailboxAddress]$Emailfrom
+$From=[MimeKit.MailboxAddress]$MailFrom
 
 #recipient list ([MimeKit.InternetAddressList] http://www.mimekit.net/docs/html/T_MimeKit_InternetAddressList.htm, required)
 $RecipientList=[MimeKit.InternetAddressList]::new()
-$RecipientList.Add([MimeKit.InternetAddress]$EmailTo)
+$RecipientList.Add([MimeKit.InternetAddress]$MasailTo)
 
 
 #cc list ([MimeKit.InternetAddressList] http://www.mimekit.net/docs/html/T_MimeKit_InternetAddressList.htm, optional)
@@ -326,7 +312,7 @@ $BCCList.Add([MimeKit.InternetAddress]"BCCRecipient1EmailAddress")
 if ($UpdatesFound -ne $null )
 {
 #subject ([string], required)
-$Subject=[string]"Serverpatchning $customer $monthname $year"
+$Subject=[string]"Serverpatchning $MailCustomer $monthname $year"
 }
 else 
 {
