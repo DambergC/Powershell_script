@@ -13,7 +13,7 @@ Version 1.0
 ############################################################
     
 .EXAMPLE
-.\Set-ScheduleTaskPatchTuesday.ps1 -OffSetWeeks 0 -OffSetDays 2 -AddStartHour 12 -AddStartMinutes 0 -PatchMonth "1","2","3","4","5","6","7","8","9","10","11" -patchyear 2022 -FolderName 'PatchTuesday'
+.\Set-ScheduleTaskPatchTuesday.ps1 -OffSetWeeks 0 -OffSetDays 2 -AddStartHour 12 -AddStartMinutes 0 -PatchMonth "1","2","3","4","5","6","7","8","9","10","11" -patchyear 2022 -FolderName PatchMail -execute 'pwsh.exe' -scriptpath 'C:\Scripts\PatchManagement\Send-UpdateDeployedMail.ps1' -UserName 'Korsberga.local\scriptrunner' -Verbose
 Will create Schedule Task for January to November to send mail two days after patch tuesday at noon.
 
 .DISCLAIMER
