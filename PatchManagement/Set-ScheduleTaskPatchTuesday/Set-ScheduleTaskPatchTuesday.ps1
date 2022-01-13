@@ -36,18 +36,24 @@ PARAM(
     [int]$patchyear,
     [string]$FolderName,
     [string]$UserName,
-    [string]$PathPasswordFile
+    [string]$execute,
+    [string]$scriptpath
     )  
 
 ############################################################
 # region functions
 ############################################################
 
+
+$password = read-host -Prompt "The domain password for $username"
+
+
 # Read passwordfile
-$Encrypted = Get-Content $PathPasswordFile | ConvertTo-SecureString
+#$Encrypted = Get-Content $PathPasswordFile | ConvertTo-SecureString
+#$UnsecurePassword = (New-Object PSCredential "user",$encrypted).GetNetworkCredential().Password
 
 # Create variable with username and password
-$Credential = New-Object System.Management.Automation.PsCredential($UserName, $Encrypted)
+#$Credential = New-Object System.Management.Automation.PsCredential($UserName, $Encrypted)
 
 
 # Set Patch Tuesday for a Month 
@@ -122,8 +128,8 @@ foreach ($Monthnumber in $PatchMonth)
     ############################################################
     # Action in Scheduled Task
     $taskAction = New-ScheduledTaskAction `
-    -Execute 'pwsh.exe' `
-    -Argument '-File C:\scripts\Send-UpdateDeployedMail.ps1'
+    -Execute $execute `
+    -Argument "-File $scriptpath -ExecutionPolicy bypass"
     ############################################################
     # Done
     ############################################################
@@ -136,19 +142,21 @@ foreach ($Monthnumber in $PatchMonth)
     # Describe the scheduled task.
     $description = "Mail - Status on downloaded and deployed patches"
 
+    $Taskusername = $Credential.UserName
+    $TaskPwd = $Credential.Password
+
         Try 
         {
             # Register the scheduled task
-            Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Description $description -TaskPath $FolderName -User $username -Password $Credential
+            Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Description $description -TaskPath $FolderName -User $username -Password $password -RunLevel Highest
 
-            $StartTime
-            #Write-Log -Message "Created Maintenance Window $NewMWName for Collection $MWCollection" -Severity 1 -Component "New Maintenance Window"
-            #Write-Output "Created Maintenance Window $NewMWName for Collection $MWCollection" 
+            #Write-Log -Message "Created schedule task $taskname " -Severity 1 -Component "New Schedule Task"
+          
         }
         Catch 
         {
             Write-Warning "$_.Exception.Message"
-            Write-Log -Message "$_.Exception.Message" -Severity 3 -Component "Create new Maintenance Window"
+            Write-Log -Message "$_.Exception.Message" -Severity 3 -Component "Create Schedule Task"
         }
 
     }
