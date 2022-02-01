@@ -9,7 +9,8 @@
     .NOTES
     More information can be found here: http://smsagent.wordpress.com/free-configmgr-reports/client-health-summary-report/
     The Parameters region should be updated for your environment before executing the script
-
+    Author: Trevor Jones @trevor_smsagent
+    v1.0 - 2016/11/02 - Intial release
 #>
 
 
@@ -52,67 +53,69 @@ $Computer_Not_Rebooted = $True
 
 #endregion
 
-    #######################################################################
-    #region Functions
-    #######################################################################
-    # Function to run a sql query
-    function Get-SQLData 
-    {
-      param($Query)
-      $connectionString = "Server=$dataSource;Database=$database;Integrated Security=SSPI;"
-      $connection = New-Object -TypeName System.Data.SqlClient.SqlConnection
-      $connection.ConnectionString = $connectionString
-      $connection.Open()
+#######################################################################
+#region Functions
+#######################################################################
+# Function to run a sql query
+function Get-SQLData 
+{
+  param($Query)
+  $connectionString = "Server=$dataSource;Database=$database;Integrated Security=SSPI;"
+  $connection = New-Object -TypeName System.Data.SqlClient.SqlConnection
+  $connection.ConnectionString = $connectionString
+  $connection.Open()
     
-      $command = $connection.CreateCommand()
-      $command.CommandText = $Query
-      $reader = $command.ExecuteReader()
-      $table = New-Object -TypeName 'System.Data.DataTable'
-      $table.Load($reader)
+  $command = $connection.CreateCommand()
+  $command.CommandText = $Query
+  $reader = $command.ExecuteReader()
+  $table = New-Object -TypeName 'System.Data.DataTable'
+  $table.Load($reader)
     
-      # Close the connection
-      $connection.Close()
+  # Close the connection
+  $connection.Close()
     
-      return $table
-    }
+  return $table
+}
 
-    # Function to set the progress bar colour based on the the threshold value
-    function Set-PercentageColour 
-    {
-      param(
-        [int]$Value,
-        [switch]$UseInventoryThresholds
-      )
+# Function to set the progress bar colour based on the the threshold value
+function Set-PercentageColour 
+{
+  param(
+    [int]$Value,
+    [switch]$UseInventoryThresholds
+  )
 
-      If ($UseInventoryThresholds)
-      {
-        $Good = $Thresholds.Inventory.Good
-        $Warning = $Thresholds.Inventory.Warning
-      }
-      Else
-      {
-        $Good = $Thresholds.Good
-        $Warning = $Thresholds.Warning      
-      }
+  If ($UseInventoryThresholds)
+  {
+    $Good = $Thresholds.Inventory.Good
+    $Warning = $Thresholds.Inventory.Warning
+  }
+  Else
+  {
+    $Good = $Thresholds.Good
+    $Warning = $Thresholds.Warning      
+  }
 
-      If ($Value -ge $Good)
-      {
-        $Hex = '#52B431' # Green
-      }
+  If ($Value -ge $Good)
+  {
+    $Hex = '#52B431' # Green
+  }
 
-      If ($Value -ge $Warning -and $Value -lt $Good)
-      {
-        $Hex = '#ff9900' # Amber
-      }
+  If ($Value -ge $Warning -and $Value -lt $Good)
+  {
+    $Hex = '#ff9900' # Amber
+  }
 
-      If ($Value -lt $Warning)
-      {
-        $Hex = '#FF0000' # Red
-      }
+  If ($Value -lt $Warning)
+  {
+    $Hex = '#FF0000' # Red
+  }
 
-      Return $Hex
-    }
-    #endregion
+  Return $Hex
+}
+#endregion
+
+
 
 #######################################################################
 #region Query Region
@@ -121,311 +124,319 @@ $Computer_Not_Rebooted = $True
 $Data = @{}
 
 ###########################################
-# Discovered Systems With Clients Installed
+# QUERY - Discovered Systems With Clients Installed
 ###########################################
 
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_R_System where (Client0 = 1)
-  "
-  $Data.ClientCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_R_System where (Client0 = 1)
+"
+$Data.ClientCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Get No Client Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_R_System where (Client0 = 0 or Client0 is null) and Unknown0 is null
-  "
-  $Data.NoClientCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get No Client Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_R_System where (Client0 = 0 or Client0 is null) and Unknown0 is null
+"
+$Data.NoClientCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Calculate Client Percentage
-  $Data.ClientCountPercentage = [Math]::Round($Data.ClientCount / ($Data.ClientCount + $Data.NoClientCount) * 100)
-  $Data.NoClientCountPercentage = 100 - $Data.ClientCountPercentage
-  $Data.TotalDiscoveredSystems = $Data.ClientCount + $Data.NoClientCount
+# Calculate Client Percentage
+$Data.ClientCountPercentage = [Math]::Round($Data.ClientCount / ($Data.ClientCount + $Data.NoClientCount) * 100)
+$Data.NoClientCountPercentage = 100 - $Data.ClientCountPercentage
+$Data.TotalDiscoveredSystems = $Data.ClientCount + $Data.NoClientCount
 
 ###########################################
-# Active Clients
+# QUERY - Active Clients
 ###########################################
 
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientActiveStatus = 1
-  "
-  $Data.ActiveCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientActiveStatus = 1
+"
+$Data.ActiveCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Get InActive Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientActiveStatus = 0
-  "
-  $Data.InactiveCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get InActive Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientActiveStatus = 0
+"
+$Data.InactiveCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Calculate Active Percentage
-  $Data.ActiveCountPercentage = [Math]::Round($Data.ActiveCount / ($Data.ActiveCount + $Data.InactiveCount) * 100)
-  $Data.InActiveCountPercentage = 100 - $Data.ActiveCountPercentage
-  $Data.ActiveInactiveTotal = $Data.ActiveCount + $Data.InactiveCount
+# Calculate Active Percentage
+$Data.ActiveCountPercentage = [Math]::Round($Data.ActiveCount / ($Data.ActiveCount + $Data.InactiveCount) * 100)
+$Data.InActiveCountPercentage = 100 - $Data.ActiveCountPercentage
+$Data.ActiveInactiveTotal = $Data.ActiveCount + $Data.InactiveCount
 
 ###########################################
-# Active/Pass Clients
+# QUERY - Active/Pass Clients
 ###########################################
 
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientStateDescription = 'Active/Pass'
-  "
-  $Data.ActivePassCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientStateDescription = 'Active/Pass'
+"
+$Data.ActivePassCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Get Active/Fail Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientStateDescription = 'Active/Fail'
-  "
-  $Data.ActiveFailCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get Active/Fail Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientStateDescription = 'Active/Fail'
+"
+$Data.ActiveFailCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Get Active/Unknown Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientStateDescription = 'Active/Unknown'
-  "
-  $Data.ActiveUnknownCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get Active/Unknown Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where ClientStateDescription = 'Active/Unknown'
+"
+$Data.ActiveUnknownCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Calculate Active/Pass Percentage
-  $Data.ActivePassCountPercentage = [Math]::Round($Data.ActivePassCount / ($Data.ActivePassCount + $Data.ActiveFailCount + $Data.ActiveUnknownCount) * 100)
-  $Data.ActiveNotPassCountPercentage = 100 - $Data.ActivePassCountPercentage
+# Calculate Active/Pass Percentage
+$Data.ActivePassCountPercentage = [Math]::Round($Data.ActivePassCount / ($Data.ActivePassCount + $Data.ActiveFailCount + $Data.ActiveUnknownCount) * 100)
+$Data.ActiveNotPassCountPercentage = 100 - $Data.ActivePassCountPercentage
 
 ###########################################
-# Active DDR
+# QUERY - Active DDR
 ###########################################
 
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveDDR = 1 and ClientActiveStatus = 1
-  "
-  $Data.ActiveDDRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveDDR = 1 and ClientActiveStatus = 1
+"
+$Data.ActiveDDRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Get InActive DDR Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveDDR = 0 and ClientActiveStatus = 1
-  "
-  $Data.InActiveDDRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get InActive DDR Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveDDR = 0 and ClientActiveStatus = 1
+"
+$Data.InActiveDDRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
   
-  # Calculate Active DDR Percentage
-  $Data.ActiveDDRCountPercentage = [Math]::Round($Data.ActiveDDRCount / ($Data.ActiveDDRCount + $Data.InActiveDDRCount) * 100)
-  $Data.InActiveDDRCountPercentage = 100 - $Data.ActiveDDRCountPercentage
+# Calculate Active DDR Percentage
+$Data.ActiveDDRCountPercentage = [Math]::Round($Data.ActiveDDRCount / ($Data.ActiveDDRCount + $Data.InActiveDDRCount) * 100)
+$Data.InActiveDDRCountPercentage = 100 - $Data.ActiveDDRCountPercentage
 
 ############################################
-# Hardware Inventory
+# QUERY - Hardware Inventory
 ############################################
 
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveHW = 1 and ClientActiveStatus = 1
-  "
-  $Data.ActiveHWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveHW = 1 and ClientActiveStatus = 1
+"
+$Data.ActiveHWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # Get InActive HW Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveHW = 0 and ClientActiveStatus = 1
-  "
-  $Data.InActiveHWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get InActive HW Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveHW = 0 and ClientActiveStatus = 1
+"
+$Data.InActiveHWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # Calculate Active HW Percentage
-  $Data.ActiveHWCountPercentage = [Math]::Round($Data.ActiveHWCount / ($Data.ActiveHWCount + $Data.InActiveHWCount) * 100)
-  $Data.InActiveHWCountPercentage = 100 - $Data.ActiveHWCountPercentage
+# Calculate Active HW Percentage
+$Data.ActiveHWCountPercentage = [Math]::Round($Data.ActiveHWCount / ($Data.ActiveHWCount + $Data.InActiveHWCount) * 100)
+$Data.InActiveHWCountPercentage = 100 - $Data.ActiveHWCountPercentage
 
 ############################################
-# Software Inventory
+# QUERY - Software Inventory
 ############################################  
   
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveSW = 1 and ClientActiveStatus = 1
-  "
-  $Data.ActiveSWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveSW = 1 and ClientActiveStatus = 1
+"
+$Data.ActiveSWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # Get InActive SW Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveSW = 0 and ClientActiveStatus = 1
-  "
-  $Data.InActiveSWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get InActive SW Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveSW = 0 and ClientActiveStatus = 1
+"
+$Data.InActiveSWCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # Calculate Active SW Percentage
-  $Data.ActiveSWCountPercentage = [Math]::Round($Data.ActiveSWCount / ($Data.ActiveSWCount + $Data.InActiveSWCount) * 100)
-  $Data.InActiveSWCountPercentage = 100 - $Data.ActiveSWCountPercentage
+# Calculate Active SW Percentage
+$Data.ActiveSWCountPercentage = [Math]::Round($Data.ActiveSWCount / ($Data.ActiveSWCount + $Data.InActiveSWCount) * 100)
+$Data.InActiveSWCountPercentage = 100 - $Data.ActiveSWCountPercentage
 
 ############################################
-# Policy Request
+# QUERY - Policy Request
 ############################################ 
 
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActivePolicyRequest = 1 and ClientActiveStatus = 1
-  "
-  $Data.ActivePRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActivePolicyRequest = 1 and ClientActiveStatus = 1
+"
+$Data.ActivePRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # Get InActive PolicyRequest Count
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActivePolicyRequest = 0 and ClientActiveStatus = 1
-  "
-  $Data.InActivePRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# Get InActive PolicyRequest Count
+$Query = "
+  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActivePolicyRequest = 0 and ClientActiveStatus = 1
+"
+$Data.InActivePRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # Calculate Active PolicyRequest Percentage
-  $Data.ActivePRCountPercentage = [Math]::Round($Data.ActivePRCount / ($Data.ActivePRCount + $Data.InActivePRCount) * 100)
-  $Data.InActivePRCountPercentage = 100 - $Data.ActivePRCountPercentage  
+# Calculate Active PolicyRequest Percentage
+$Data.ActivePRCountPercentage = [Math]::Round($Data.ActivePRCount / ($Data.ActivePRCount + $Data.InActivePRCount) * 100)
+$Data.InActivePRCountPercentage = 100 - $Data.ActivePRCountPercentage  
 
 ############################################
-# Client Version
+# QUERY - Client Version
 ############################################ 
 
-  $Query = "
-    Select sys.Client_Version0 as 'Client Version', count (sys.ResourceID) as 'Count' from v_R_System sys
-    inner join v_CH_ClientSummary ch on sys.ResourceID = ch.ResourceID
-    where ch.ClientActiveStatus = 1
-    Group by sys.Client_Version0
-    Order by sys.Client_Version0 desc
-  "
-  $Data.ClientVersions = Get-SQLData -Query $Query
-  $Data.TotalForClientVersions = [int]0
-  $Data.ClientVersions | ForEach-Object -Process {
-    $Data.TotalForClientVersions = $Data.TotalForClientVersions + $_.Count
-  }
-    #endregion
+$Query = "
+  Select sys.Client_Version0 as 'Client Version', count (sys.ResourceID) as 'Count' from v_R_System sys
+  inner join v_CH_ClientSummary ch on sys.ResourceID = ch.ResourceID
+  where ch.ClientActiveStatus = 1
+  Group by sys.Client_Version0
+  Order by sys.Client_Version0 desc
+"
+$Data.ClientVersions = Get-SQLData -Query $Query
+$Data.TotalForClientVersions = [int]0
+$Data.ClientVersions | ForEach-Object -Process {
+  $Data.TotalForClientVersions = $Data.TotalForClientVersions + $_.Count
+}
+
 
 ############################################
-# No Client System
+# QUERY - No Client System
 ############################################
 
 $Data.NoClient = @{}
-  # no client - unknown OS
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_R_System 
-    where (Client0 = 0 or Client0 is null) 
-    and Unknown0 is null
-    and Operating_System_Name_and0 like 'unknown%'
-  "
-  $Data.NoClient.UnknownOS = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# no client - unknown OS
+$Query = "
+  Select count(ResourceID) as 'Count' from v_R_System 
+  where (Client0 = 0 or Client0 is null) 
+  and Unknown0 is null
+  and Operating_System_Name_and0 like 'unknown%'
+"
+$Data.NoClient.UnknownOS = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # no client windows OS
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_R_System 
-    where (Client0 = 0 or Client0 is null) 
-    and Unknown0 is null
-    and Operating_System_Name_and0 like '%Windows%'
-  "
-  $Data.NoClient.WindowsOS = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# no client windows OS
+$Query = "
+  Select count(ResourceID) as 'Count' from v_R_System 
+  where (Client0 = 0 or Client0 is null) 
+  and Unknown0 is null
+  and Operating_System_Name_and0 like '%Windows%'
+"
+$Data.NoClient.WindowsOS = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # no client other OS
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_R_System 
-    where (Client0 = 0 or Client0 is null) 
-    and Unknown0 is null
-    and Operating_System_Name_and0 not like '%Windows%'
-    and Operating_System_Name_and0 not like 'unknown%'
-  "
-  $Data.NoClient.OtherOS = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# no client other OS
+$Query = "
+  Select count(ResourceID) as 'Count' from v_R_System 
+  where (Client0 = 0 or Client0 is null) 
+  and Unknown0 is null
+  and Operating_System_Name_and0 not like '%Windows%'
+  and Operating_System_Name_and0 not like 'unknown%'
+"
+$Data.NoClient.OtherOS = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # no client and no last logon timestamp in last 7 days
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_R_System 
-    where (Client0 = 0 or Client0 is null) 
-    and Unknown0 is null
-    and (DATEDIFF(day,Last_Logon_Timestamp0, GetDate())) >= 7
-  "
-  $Data.NoClient.GTLast7 = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# no client and no last logon timestamp in last 7 days
+$Query = "
+  Select count(ResourceID) as 'Count' from v_R_System 
+  where (Client0 = 0 or Client0 is null) 
+  and Unknown0 is null
+  and (DATEDIFF(day,Last_Logon_Timestamp0, GetDate())) >= 7
+"
+$Data.NoClient.GTLast7 = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # no client and last logon timestamp within last 7 days
-  $Query = "
-    Select count(ResourceID) as 'Count' from v_R_System 
-    where (Client0 = 0 or Client0 is null) 
-    and Unknown0 is null
-    and (DATEDIFF(day,Last_Logon_Timestamp0, GetDate())) < 7
-  "
-  $Data.NoClient.LTLast7 = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+# no client and last logon timestamp within last 7 days
+$Query = "
+  Select count(ResourceID) as 'Count' from v_R_System 
+  where (Client0 = 0 or Client0 is null) 
+  and Unknown0 is null
+  and (DATEDIFF(day,Last_Logon_Timestamp0, GetDate())) < 7
+"
+$Data.NoClient.LTLast7 = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
 
-  # Client Installation failure
+############################################
+# QUERY - Client Installation failure
+############################################
 
-   $Query = "
-    select count(cdr.MachineID) as 'Count',
-    cdr.CP_LastInstallationError as 'Error Code'
-    from v_CombinedDeviceResources cdr
-    where 
-    cdr.IsClient = 0
-    and cdr.DeviceOS like '%Windows%'
-    and CP_LastInstallationError >= 0
-    group by cdr.CP_LastInstallationError
-    "
-  $InstallErrors = Get-SQLData -Query $Query
+$Query = "
+  select count(cdr.MachineID) as 'Count',
+  cdr.CP_LastInstallationError as 'Error Code'
+  from v_CombinedDeviceResources cdr
+  where 
+  cdr.IsClient = 0
+  and cdr.DeviceOS like '%Windows%'
+  and CP_LastInstallationError >= 0
+  group by cdr.CP_LastInstallationError
+"
+$InstallErrors = Get-SQLData -Query $Query
 
-  # Translate error codes to friendly names and add the percentage value
-  $TotalErrors = 0
-  $InstallErrors | ForEach-Object -Process {
-    $TotalErrors = $TotalErrors + $_.Count
+# Translate error codes to friendly names and add the percentage value
+$TotalErrors = 0
+$InstallErrors | ForEach-Object -Process {
+  $TotalErrors = $TotalErrors + $_.Count
+}
+$Data.InstallFailures = $InstallErrors |
+Select-Object -Property Count, 'Error Code', @{
+  n = 'Error Description'
+  e = {
+    ([ComponentModel.Win32Exception]$_.'Error Code').Message
   }
-  $Data.InstallFailures = $InstallErrors |
-  Select-Object -Property Count, 'Error Code', @{
-    n = 'Error Description'
-    e = {
-      ([ComponentModel.Win32Exception]$_.'Error Code').Message
-    }
-  }, @{
-    n = 'Percentage'
-    e = {
-      [Math]::Round($_.Count / $TotalErrors * 100)
-    }
-  } |
-  Sort-Object -Property Count -Descending
+}, @{
+  n = 'Percentage'
+  e = {
+    [Math]::Round($_.Count / $TotalErrors * 100)
+  }
+} |
+Sort-Object -Property Count -Descending
 
-  # Computer Reboots
+############################################
+# QUERY - Computer Reboots
+############################################
 
 # Active systems with a known Last BootUp Time
-  $Query = "
-    select Count(ch.ResourceID) as 'Count'
-    from v_CH_ClientSummary ch
-    left join v_GS_OPERATING_SYSTEM os on os.ResourceId = ch.ResourceId 
-    where os.LastBootUpTime0 is not null
-    and ch.ClientActiveStatus = 1
-  "
-  $Data.ActiveLastBootUpTotal = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
-
-  # Computer reboot dates
-  $Query = "
-    select '7 days' as TimePeriod,Count(sys.Name0) as 'Count',1 SortOrder
-    from v_R_System sys
-    inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
-    inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
-    where os.LastBootUpTime0 < DATEADD(day,-7, GETDATE())
-    and ch.ClientActiveStatus = 1
-    UNION
-    select '14 days' as TimePeriod,Count(sys.Name0) as 'Count',2
-    from v_R_System sys
-    inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
-    inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
-    where os.LastBootUpTime0 < DATEADD(day,-14, GETDATE())
-    and ch.ClientActiveStatus = 1
-    UNION
-    select '1 month' as TimePeriod,Count(sys.Name0) as 'Count',3
-    from v_R_System sys
-    inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
-    inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
-    where os.LastBootUpTime0 < DATEADD(month,-1, GETDATE())
-    and ch.ClientActiveStatus = 1
-    UNION
-    select '3 months' as TimePeriod,Count(sys.Name0) as 'Count',4
-    from v_R_System sys
-    inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
-    inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
-    where os.LastBootUpTime0 < DATEADD(MONTH,-3, GETDATE())
-    and ch.ClientActiveStatus = 1
-    UNION
-    select '6 months' as TimePeriod,Count(sys.Name0) as 'Count',5
-    from v_R_System sys
-    inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
-    inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
-    where os.LastBootUpTime0 < DATEADD(MONTH,-6, GETDATE())
-    and ch.ClientActiveStatus = 1
-    Order By SortOrder
-  "
-  $Data.ComputerReboots = Get-SQLData -Query $Query
-
-  # Client Health Thresholds
- 
- $Query = "
-SELECT *
-FROM v_CH_Settings
-where SettingsID = 1
+$Query = "
+  select Count(ch.ResourceID) as 'Count'
+  from v_CH_ClientSummary ch
+  left join v_GS_OPERATING_SYSTEM os on os.ResourceId = ch.ResourceId 
+  where os.LastBootUpTime0 is not null
+  and ch.ClientActiveStatus = 1
 "
+$Data.ActiveLastBootUpTotal = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+
+# Computer reboot dates
+$Query = "
+  select '7 days' as TimePeriod,Count(sys.Name0) as 'Count',1 SortOrder
+  from v_R_System sys
+  inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
+  inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
+  where os.LastBootUpTime0 < DATEADD(day,-7, GETDATE())
+  and ch.ClientActiveStatus = 1
+  UNION
+  select '14 days' as TimePeriod,Count(sys.Name0) as 'Count',2
+  from v_R_System sys
+  inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
+  inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
+  where os.LastBootUpTime0 < DATEADD(day,-14, GETDATE())
+  and ch.ClientActiveStatus = 1
+  UNION
+  select '1 month' as TimePeriod,Count(sys.Name0) as 'Count',3
+  from v_R_System sys
+  inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
+  inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
+  where os.LastBootUpTime0 < DATEADD(month,-1, GETDATE())
+  and ch.ClientActiveStatus = 1
+  UNION
+  select '3 months' as TimePeriod,Count(sys.Name0) as 'Count',4
+  from v_R_System sys
+  inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
+  inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
+  where os.LastBootUpTime0 < DATEADD(MONTH,-3, GETDATE())
+  and ch.ClientActiveStatus = 1
+  UNION
+  select '6 months' as TimePeriod,Count(sys.Name0) as 'Count',5
+  from v_R_System sys
+  inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
+  inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
+  where os.LastBootUpTime0 < DATEADD(MONTH,-6, GETDATE())
+  and ch.ClientActiveStatus = 1
+  Order By SortOrder
+"
+$Data.ComputerReboots = Get-SQLData -Query $Query
+
+############################################
+# QUERY - Client Health Thresholds
+############################################
+
+$Query = '
+  SELECT *
+  FROM v_CH_Settings
+  where SettingsID = 1
+'
 
 $Data.CHSettings = Get-SQLData -Query $Query 
 
-# Maintenance Task Status
+############################################
+# QUERY - Maintenance Task Status
+############################################
 
 $Query = '
   select *,
@@ -437,7 +448,9 @@ $Query = '
 
 $Data.MWStatus = Get-SQLData -Query $Query
 
-# Database File size
+############################################
+# QUERY - Database File size
+############################################
 
 $Query = "
   select
@@ -453,11 +466,13 @@ $Query = "
 
 $Data.DBStatus = Get-SQLData -Query $Query
 
+#endregion
+
 #######################################################################
 #region Create html header
 #######################################################################
 
-    $html = @"
+$html = @"
 <!DOCTYPE html>
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -496,7 +511,7 @@ $Data.DBStatus = Get-SQLData -Query $Query
 
 "@
 
-    #endregion
+#endregion
 
 #######################################################################
 #region HTML Client Versions
@@ -521,10 +536,10 @@ $html = $html + @"
 </table>
 "@
 
-$Data.ClientVersions | foreach {
-$Percentage = [Math]::Round($_.Count / $Data.TotalForClientVersions * 100)
-$PercentageRemaining = (100 - $Percentage)
-$html = $html + @"
+$Data.ClientVersions | ForEach-Object -Process {
+  $Percentage = [Math]::Round($_.Count / $Data.TotalForClientVersions * 100)
+  $PercentageRemaining = (100 - $Percentage)
+  $html = $html + @"
 <table cellpadding="1" cellspacing="1" width="930">
     <tbody>
     <tr>
@@ -549,8 +564,8 @@ $html = $html + @"
 #region HTML Get No Client Systems
 #######################################################################
 
-  # Set html
-  $html = $html + @"
+# Set html
+$html = $html + @"
     <table width="930" border="1" cellspacing="10" cellpadding="10">
     <tbody>
         <tr>
@@ -558,9 +573,9 @@ $html = $html + @"
             <h4>Systems with No Client</h4>
                 <table cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                    <th style="text-align: left" width="240">Category</th>
-                    <th style="text-align: left" width="80">Count</th>
-                    <th style="text-align: left" width="80">Percent</th>
+                    <th style="text-align: left" width="60%">Category</th>
+                    <th style="text-align: left" width="20%">Count</th>
+                    <th style="text-align: left" width="20%">Percent</th>
                 </tr>
                 </table>
             </td>
@@ -569,64 +584,64 @@ $html = $html + @"
     </table>
 "@
 
-  $html = $html + @"
+$html = $html + @"
     <table width="930" border="1" cellspacing="10" cellpadding="10">
     <tbody>
         <tr>
             <td>
                 <table cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                    <td width="240">
+                    <td width="60%">
                     Windows OS
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $($Data.NoClient.WindowsOS)
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $([Math]::Round($Data.NoClient.WindowsOS / $Data.NoClientCount * 100))%
                     </td>
                 </tr>
                 <tr>
-                    <td width="240">
+                    <td width="60%">
                     Other OS
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $($Data.NoClient.OtherOS)
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $([Math]::Round($Data.NoClient.OtherOS / $Data.NoClientCount * 100))%
                     </td>
                 </tr>
                 <tr>
-                    <td width="240">
+                    <td width="60%">
                     Unknown OS
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $($Data.NoClient.UnknownOS)
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $([Math]::Round($Data.NoClient.UnknownOS / $Data.NoClientCount * 100))%
                     </td>
                 </tr>
                 <tr>
-                    <td width="240">
+                    <td width="60%">
                     Last Logon > 7 days
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $($Data.NoClient.GTLast7)
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $([Math]::Round($Data.NoClient.GTLast7 / $Data.NoClientCount * 100))%
                     </td>
                 </tr>
                 <tr>
-                    <td width="240">
+                    <td width="60%">
                     Last Logon < 7 days
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $($Data.NoClient.LTLast7)
                     </td>
-                    <td width="80">
+                    <td width="20%">
                     $([Math]::Round($Data.NoClient.LTLast7 / $Data.NoClientCount * 100))%
                     </td>
                 </tr>
@@ -644,8 +659,8 @@ $html = $html + @"
 #######################################################################
 
 
-  # Set html
-  $html = $html + @"
+# Set html
+$html = $html + @"
     <table width="930" border="1" cellspacing="10" cellpadding="10">
     <tbody>
         <tr>
@@ -665,8 +680,8 @@ $html = $html + @"
     </table>
 "@
 
-  $Data.InstallFailures | ForEach-Object -Process {
-    $html = $html + @"
+$Data.InstallFailures | ForEach-Object -Process {
+  $html = $html + @"
     <table width="930" border="1" cellspacing="10" cellpadding="10">
     <tbody>
         <tr>
@@ -692,7 +707,7 @@ $html = $html + @"
     </tbody>
     </table>
 "@
-  }
+}
 
 #endregion
 
@@ -700,8 +715,8 @@ $html = $html + @"
 #region HTML Computer reboots
 #######################################################################
 
-  # Set html
-  $html = $html + @"
+# Set html
+$html = $html + @"
     <table width="930" border="1" cellspacing="10" cellpadding="10">
     <tbody>
         <tr>
@@ -716,7 +731,7 @@ $html = $html + @"
                     </table>
 "@
 
-  $html = $html + @"
+$html = $html + @"
                     <table cellpadding="0" cellspacing="0" width="100%">
                         <tr>
                             <td width="60%">
@@ -973,8 +988,8 @@ $Data.DBStatus | ForEach-Object -Process {
 #region HTML - Discoverd Systems with client & Active Clients
 #######################################################################
 
-    # Set html
-    $html = $html + @"
+# Set html
+$html = $html + @"
 <table width="600" border="1" cellpadding="10" cellspacing="30">
   <tbody>
     <tr>
@@ -1025,15 +1040,15 @@ $Data.DBStatus | ForEach-Object -Process {
 </table>
 "@
 
-    #endregion
+#endregion
 
 #######################################################################
 #region HTML Active Clients Health Evaluation & Active Clients Heartbeat (DDR)
 #######################################################################
 
 
-    # Set html
-    $html = $html + @"
+# Set html
+$html = $html + @"
 <table width="600" border="1" cellpadding="10" cellspacing="30">
   <tbody>
     <tr>
@@ -1099,14 +1114,14 @@ $Data.DBStatus | ForEach-Object -Process {
 </table>
 
 "@
-    #endregion
+#endregion
 
 #######################################################################
 #region HTML Hardware Inventory & Software Inventory
 #######################################################################
 
-    # Set html
-    $html = $html + @"
+# Set html
+$html = $html + @"
 <table width="600" border="1" cellpadding="10" cellspacing="30">
   <tbody>
     <tr>
@@ -1172,14 +1187,14 @@ $Data.DBStatus | ForEach-Object -Process {
   </tbody>
 </table>
 "@
-    #endregion
+#endregion
 
 #######################################################################
 #region HTML Active PolicyRequest Count
 #######################################################################
 
-    # Set html
-    $html = $html + @"
+# Set html
+$html = $html + @"
     <table width="930" border="1" cellspacing="30" cellpadding="10" bordercolor="black">
     <tbody>
         <tr>
@@ -1224,7 +1239,7 @@ $Data.DBStatus | ForEach-Object -Process {
 
 
 
-    #endregion
+#endregion
 
 #######################################################################
 #region Close html document...
