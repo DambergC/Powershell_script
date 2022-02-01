@@ -9,8 +9,7 @@
     .NOTES
     More information can be found here: http://smsagent.wordpress.com/free-configmgr-reports/client-health-summary-report/
     The Parameters region should be updated for your environment before executing the script
-    Author: Trevor Jones @trevor_smsagent
-    v1.0 - 2016/11/02 - Intial release
+
 #>
 
 
@@ -42,14 +41,9 @@ $Thresholds.Inventory = @{} # Inventory thresholds are applicable to HW inventor
 $Thresholds.Inventory.Good = 90
 $Thresholds.Inventory.Warning = 70
 
-# Enable reports Regions
-$active_Clients_Policy_Request = $True
-$active_Clients_software_inventory = $True
-$active_Clients_Hardware_Inventory = $True
-$Client_Versions = $True
-$System_Without_Client = $True
-$Windows_Clients_Install_failures = $True
-$Computer_Not_Rebooted = $True
+# Siteconfiguration
+$sitecode = 'ps1'
+$siteserver = 'TH-mgt02.korsberga.local'
 
 #endregion
 
@@ -115,6 +109,22 @@ function Set-PercentageColour
 }
 #endregion
 
+#######################################################################
+#region Powershell Region
+#######################################################################
+
+  #######################################
+  # Powershell - ADR Status
+  #######################################
+  $ADRstatus = Get-CMSoftwareUpdateAutoDeploymentRule -Fast
+  
+  #######################################
+  # Powershell - StatusMessage Siteserver
+  #######################################
+  $StatusMessageSiteserver = Get-CMSiteStatusMessage -ComputerName $siteserver -Severity Error -SiteCode $sitecode
+  
+  
+#endregion
 
 
 #######################################################################
@@ -488,6 +498,10 @@ $html = @"
     table, th, td{
       border: 5px ;
       background-color: white;
+      align: Left;
+      text-align: left;
+      padding-left: 10px;
+      padding-right: 10px;
        
       
     }
@@ -505,6 +519,7 @@ $html = @"
         padding-top:2px;
         padding-bottom:2px
         padding:2px
+        text-align: left;
         }
 </style>
 
@@ -514,20 +529,148 @@ $html = @"
 #endregion
 
 #######################################################################
+#region HTML ADR Status
+#######################################################################
+
+# Set html
+$html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+            <h4>Automatic Deployment Rules - Status</h4>
+        
+        <table width="100%">
+        <tr>
+            <td width="2%"></td>
+            <th width="30%" >ADR Name</th>
+            <th width="20%" >Last Error Code</th>
+            <th width="25%" >Last Error Time</th>
+            <th width="25%" >Last Run Time</th>
+        </tr>
+        </table>
+                    </td>
+        </tr>
+    </tbody>
+    </table>
+"@
+
+$ADRstatus | ForEach-Object -Process {
+  
+
+  
+    $html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+        <table width="100%">      
+        <tr  bgcolor="red">
+            <td width="2%"></td>
+            <td width="30%">
+            $($_.name)
+            </td>
+            <td width="20%">
+            $($_.lasterrorcode)
+            </td>
+            <td width="25%">
+            $($_.lasterrortime)
+            </td>
+            <td width="25%">
+            $($_.lastRuntime)
+            </td>
+        </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+    </table>
+"@
+  
+
+}
+
+
+#endregion
+
+#######################################################################
+#region HTML StatusMessage Siteserver
+#######################################################################
+
+# Set html
+$html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+            <h4>StatusMessage Siteserver - last 24h</h4>
+        
+        <table width="100%">
+        <tr>
+            <td width="2%"></td>
+            <th width="50%" >Component</th>
+            <th width="20%" >MessageID</th>
+            <th width="30%" >Time</th>
+
+        </tr>
+        </table>
+                    </td>
+        </tr>
+    </tbody>
+    </table>
+"@
+
+$StatusMessageSiteserver | ForEach-Object -Process {
+  
+
+  
+    $html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+        <table width="100%">      
+        <tr  bgcolor="red">
+            <td width="2%"></td>
+            <td width="50%">
+            $($_.component)
+            </td>
+            <td width="20%">
+            $($_.Messageid)
+            </td>
+            <td width="30%">
+            $($_.time)
+            </td>
+
+        </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+    </table>
+"@
+  
+
+}
+
+
+#endregion
+
+#######################################################################
 #region HTML Client Versions
 #######################################################################
     
 # Set html
 $html = $html + @"
-<table width="930" border="1" cellspacing="10" cellpadding="10">
+<table width="930" border="1">
     <tbody>
 	<tr>
 	    <th><h4>Client Versions</h4>
-        <table cellpadding="1" cellspacing="1" width="100%">
+        <table  width="100%">
         <tr>
-            <th style="text-align: left" width="80%">Version</th>
-            <th style="text-align: left" width="10%">Count</th>
-            <th style="text-align: left" width="10%">Percent</th>
+            <th  width="60%">Version</th>
+            <th  width="20%">Count</th>
+            <th  width="20%">Percent</th>
         </tr>
         </table>
         </th>
@@ -540,17 +683,17 @@ $Data.ClientVersions | ForEach-Object -Process {
   $Percentage = [Math]::Round($_.Count / $Data.TotalForClientVersions * 100)
   $PercentageRemaining = (100 - $Percentage)
   $html = $html + @"
-<table cellpadding="1" cellspacing="1" width="930">
+<table width="930">
     <tbody>
     <tr>
         <td width="2%"></td>
-        <td width="80%">
+        <td width="60%">
         $($_.'Client Version')
         </td>
-        <td width="10%">
+        <td width="20%">
         $($_.Count)
         </td>
-        <td width="10%">
+        <td width="20%">
         $($Percentage)%
         </td>
     </tr>
@@ -566,16 +709,16 @@ $Data.ClientVersions | ForEach-Object -Process {
 
 # Set html
 $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
         <tr>
             <td>
             <h4>Systems with No Client</h4>
-                <table cellpadding="0" cellspacing="0" width="100%">
+                <table width="100%">
                 <tr>
-                    <th style="text-align: left" width="60%">Category</th>
-                    <th style="text-align: left" width="20%">Count</th>
-                    <th style="text-align: left" width="20%">Percent</th>
+                    <th  width="60%">Category</th>
+                    <th  width="20%">Count</th>
+                    <th  width="20%">Percent</th>
                 </tr>
                 </table>
             </td>
@@ -585,11 +728,11 @@ $html = $html + @"
 "@
 
 $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
         <tr>
             <td>
-                <table cellpadding="0" cellspacing="0" width="100%">
+                <table width="100%">
                 <tr>
                     <td width="60%">
                     Windows OS
@@ -661,17 +804,17 @@ $html = $html + @"
 
 # Set html
 $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
         <tr>
             <td>
                 <h4>Windows Client Installation Failures</h4>
-                <table cellpadding="0" cellspacing="0" width="100%">
+                <table width="100%">
                 <tr>
-                    <th style="text-align: left" width="20%">Error Code</th>
-                    <th style="text-align: left" width="60%">Error Description</th>
-                    <th style="text-align: left" width="10%">Count</th>
-                    <th style="text-align: left" width="10%">Percent</th>
+                    <th  width="20%">Error Code</th>
+                    <th  width="60%">Error Description</th>
+                    <th  width="10%">Count</th>
+                    <th  width="10%">Percent</th>
                 </tr>
                 </table>
             </td>
@@ -682,11 +825,11 @@ $html = $html + @"
 
 $Data.InstallFailures | ForEach-Object -Process {
   $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
         <tr>
             <td>
-                <table cellpadding="0" cellspacing="0" width="100%">
+                <table width="100%">
                 <tr>
                     <td width="20%">
                     $($_.'Error Code')
@@ -717,22 +860,22 @@ $Data.InstallFailures | ForEach-Object -Process {
 
 # Set html
 $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
         <tr>
             <td>
                 <h4>Computers Not Rebooted</h4>
-                    <table cellpadding="0" cellspacing="0" width="100%">
+                    <table width="100%">
                     <tr>
-                        <th style="text-align: left" width="60%">Time Period</th>
-                        <th style="text-align: left" width="20%">Count</th>
-                        <th style="text-align: left" width="20%">Percent*</th>
+                        <th  width="60%">Time Period</th>
+                        <th  width="20%">Count</th>
+                        <th  width="20%">Percent*</th>
                     </tr>
                     </table>
 "@
 
 $html = $html + @"
-                    <table cellpadding="0" cellspacing="0" width="100%">
+                    <table width="100%">
                         <tr>
                             <td width="60%">
                             $($Data.ComputerReboots[0].TimePeriod)
@@ -804,21 +947,21 @@ $html = $html + @"
 
 # Set html
 $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
         <tr>
             <td>
                 <h4>Client Status Settings</h4>
-                    <table cellpadding="0" cellspacing="0" width="100%">
+                    <table width="100%">
                     <tr>
-                        <th style="text-align: left" width="75%">Setting</th>
-                        <th style="text-align: left" width="25%">Days</th>
+                        <th  width="75%">Setting</th>
+                        <th  width="25%">Days</th>
                     </tr>
                     </table>
 "@
 
 $html = $html + @"
-                    <table cellpadding="0" cellspacing="0" width="100%">
+                    <table width="100%">
                     <tr>
                         <td width="75%">
                         Heartbeat Discovery
@@ -874,16 +1017,16 @@ $html = $html + @"
 
 # Set html
 $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
     <tr>
         <td>
             <h4>Maintenance Task Status</h4>
-            <table cellpadding="0" cellspacing="0" width="100%">
+            <table width="100%">
                 <tr>
-                    <th width="40%" align="Left">Taskname</th>
-                    <th width="20%" align="Left">LastStartTime</th>
-                    <th width="20%" align="Left">LastCompletionTime</th>
+                    <th width="50%">Taskname</th>
+                    <th width="25%">LastStartTime</th>
+                    <th width="25%">LastCompletionTime</th>
                 </tr>
             </table>
        </td>
@@ -894,22 +1037,20 @@ $html = $html + @"
 
 $Data.MWStatus | ForEach-Object -Process {
   $html = $html + @"
-    <table width="930" border="1" cellspacing="2" cellpadding="2">
+    <table width="930" border="1">
     <tbody>
     <tr>
         <td>
-            <table cellpadding="0" cellspacing="0" width="100%">
+            <table width="100%">
                 <tr>
-                    <td width="2%">
-                    
-                    </td>
-                    <td width="40%">
+
+                    <td width="50%">
                     $($_.'Taskname')
                     </td>
-                         <td width="20%">
+                         <td width="25%">
                     $($_.'LastStartTime')
                     </td>
-                            <td width="20%">
+                            <td width="25%">
                     $($_.'LastCompletionTime')
                     </td>
 
@@ -929,18 +1070,18 @@ $Data.MWStatus | ForEach-Object -Process {
 
 # Set html
 $html = $html + @"
-    <table width="930" border="1" cellspacing="10" cellpadding="10">
+    <table width="930" border="1">
     <tbody>
     <tr>
         <td>
             <h4>Databasefiles Status</h4>
-                <table cellpadding="0" cellspacing="0" width="100%">
+                <table width="100%">
                 <tr>
-                    <th style="text-align: left" width="60%">FileName</th>
-                    <th style="text-align: left" width="10%">FileSize (MB)</th>
-                    <th style="text-align: left" width="10%">UsedSpace (MB)</th>
-                    <th style="text-align: left" width="10%">FreeSpace (MB)</th>
-                    <th style="text-align: left" width="10%">GrowthSpace (MB)</th>
+                    <th width="40%">FileName</th>
+                    <th width="15%">FileSize (MB)</th>
+                    <th width="15%">UsedSpace (MB)</th>
+                    <th width="15%">FreeSpace (MB)</th>
+                    <th width="15%">GrowthSpace (MB)</th>
                 </tr>
                 </table>
         </td>
@@ -951,28 +1092,27 @@ $html = $html + @"
 "@
 
 $Data.DBStatus | ForEach-Object -Process {
-  $html = $html + (@'
-
-                <table width="930" border="1" cellspacing="10" cellpadding="10">
+  $html = $html + @"
+  <table width="930" border="1">
                 <tbody>
                 <tr>
                     <td>
-                        <table cellpadding="0" cellspacing="0" width="100%">
+                        <table width="100%">
                         <tr>
-                            <td width="60%">
-                            {0}
+                            <td width="40%">
+                            $($_.'DBName')
                             </td>
-                                 <td width="10%">
-                            {1}
+                            <td width="15%">
+                            $($_.'FileSize_MB')
                             </td>
-                                    <td width="10%">
-                            {2}
+                            <td width="15%">
+                            $($_.'UsedSpace_MB')
                             </td>
-                                        <td width="10%">
-                            {3}
+                            <td width="15%">
+                            $($_.'FreeSpace_MB')
                             </td>
-                            <td width="10%">
-                            {4}
+                            <td width="15%">
+                            $($_.'GrowthSpace_MB')
                             </td>
                         </tr>
                         </table>
@@ -980,7 +1120,10 @@ $Data.DBStatus | ForEach-Object -Process {
                 </tr>
                 </tbody>
                 </table>
-'@ -f $_.'DBName', $_.'FileSize_MB', $_.'UsedSpace_MB', $_.'FreeSpace_MB', $_.'GrowthSpace_MB')
+"@
+
+                
+  #@ -f $_.'DBName', $_.'FileSize_MB', $_.'UsedSpace_MB', $_.'FreeSpace_MB', $_.'GrowthSpace_MB')
 }
 #endregion
 
@@ -990,17 +1133,17 @@ $Data.DBStatus | ForEach-Object -Process {
 
 # Set html
 $html = $html + @"
-<table width="600" border="1" cellpadding="10" cellspacing="30">
+<table width="930" border="1">
   <tbody>
     <tr>
-      <td><table cellpadding="1" cellspacing="1" width="400">
+      <td><table width="400">
         <tr><h4> Discovered Systems with Client Installed</h4></tr>
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $Data.ClientCountPercentage);color:#ffffff;" width="$($Data.ClientCountPercentage)%"> $($Data.ClientCountPercentage)% </td>
           <td style="background-color:#eeeeee;color:#333333;" width="$($Data.NoClientCountPercentage)%"></td>
         </tr>
       </table>
-        <table cellpadding="0" cellspacing="0" width="400">
+        <table width="400">
           <tr>
             <td width="80%"> Discovered Systems with Client </td>
             <td width="20%"> $($Data.ClientCount) </td>
@@ -1015,13 +1158,13 @@ $html = $html + @"
           </tr>
       </table></td>
       <td><h4>Active Clients</h4>
-        <table cellpadding="0" cellspacing="0" width="400">
+        <table width="400">
           <tr>
             <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveCountPercentage);color:#ffffff;" width="$($Data.ActiveCountPercentage)%"> $($Data.ActiveCountPercentage)% </td>
             <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InactiveCountPercentage)%"></td>
           </tr>
         </table>
-        <table cellpadding="0" cellspacing="0" width="400">
+        <table width="400">
           <tr>
             <td width="80%"> Active Clients </td>
             <td width="20%"> $($Data.ActiveCount) </td>
@@ -1049,11 +1192,11 @@ $html = $html + @"
 
 # Set html
 $html = $html + @"
-<table width="600" border="1" cellpadding="10" cellspacing="30">
+<table width="930" border="1">
   <tbody>
     <tr>
       <td><h4>Active Clients Health Evaluation</h4>
-        <table cellpadding="0" cellspacing="0" width="400">
+        <table width="400">
             <tr>
                 <td style="background-color:$(Set-PercentageColour -Value $Data.ActivePassCountPercentage);color:#ffffff;" width="$($Data.ActivePassCountPercentage)%">
                 $($Data.ActivePassCountPercentage)%
@@ -1062,7 +1205,7 @@ $html = $html + @"
                 </td>
             </tr>
         </table>
-        <table cellpadding="0" cellspacing="0" width="400">
+        <table width="400">
             <tr>
                 <td width="80%">
                 Active/Pass
@@ -1089,13 +1232,13 @@ $html = $html + @"
             </tr>
             </table></td>
       <td><h4>Active Clients Heartbeat (DDR)</h4>
-        <table cellpadding="0" cellspacing="0" width="400">
+        <table width="400">
           <tr>
             <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveCountPercentage);color:#ffffff;" width="$($Data.ActiveCountPercentage)%"> $($Data.ActiveCountPercentage)% </td>
             <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InactiveCountPercentage)%"></td>
           </tr>
         </table>
-        <table cellpadding="0" cellspacing="0" width="400">
+        <table width="400">
           <tr>
             <td width="80%"> Active Clients </td>
             <td width="20%"> $($Data.ActiveCount) </td>
@@ -1122,11 +1265,11 @@ $html = $html + @"
 
 # Set html
 $html = $html + @"
-<table width="600" border="1" cellpadding="10" cellspacing="30">
+<table width="930" border="1">
   <tbody>
     <tr>
         <td><h4>Active Clients Hardware Inventory</h4>
-      <table cellpadding="0" cellspacing="0" width="400">
+      <table width="400">
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveHWCountPercentage -UseInventoryThresholds);color:#ffffff;" width="$($Data.ActiveHWCountPercentage)%">
           $($Data.ActiveHWCountPercentage)%
@@ -1135,7 +1278,7 @@ $html = $html + @"
           </td>
         </tr>
       </table>
-      <table cellpadding="0" cellspacing="0" width="400">
+      <table width="400">
         <tr>
             <td width="80%">
             Active HW Inventory
@@ -1155,7 +1298,7 @@ $html = $html + @"
       </table>
       </td>
       <td><h4>Active Clients Software Inventory</h4>
-      <table cellpadding="0" cellspacing="0" width="400">
+      <table width="400">
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveSWCountPercentage -UseInventoryThresholds);color:#ffffff;" width="$($Data.ActiveSWCountPercentage)%">
           $($Data.ActiveSWCountPercentage)%
@@ -1164,7 +1307,7 @@ $html = $html + @"
           </td>
         </tr>
       </table>
-      <table cellpadding="0" cellspacing="0" width="400">
+      <table width="400">
         <tr>
             <td width="80%">
             Active SW Inventory
@@ -1195,14 +1338,14 @@ $html = $html + @"
 
 # Set html
 $html = $html + @"
-    <table width="930" border="1" cellspacing="30" cellpadding="10" bordercolor="black">
+    <table width="930" border="1" bordercolor="black">
     <tbody>
         <tr>
             <td width="400">
-                <table cellpadding="0" cellspacing="0">
+                <table cellspacing="0">
                     <tr><h4>Active Clients Policy Request</h4></tr>
                 </table>
-                <table cellpadding="0" cellspacing="0" width="400">
+                <table width="400">
                     <tr>
                         <td style="background-color:$(Set-PercentageColour -Value $Data.ActivePRCountPercentage);color:#ffffff;" width="$($Data.ActivePRCountPercentage)%">
                         $($Data.ActivePRCountPercentage)%
@@ -1211,7 +1354,7 @@ $html = $html + @"
                         </td>
                     </tr>
                 </table>
-                <table cellpadding="0" cellspacing="0" width="400">
+                <table width="400">
                     <tr>
                         <td width="80%">
                         Active Policy Request
