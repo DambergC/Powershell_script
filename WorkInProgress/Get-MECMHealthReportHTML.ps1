@@ -9,8 +9,6 @@
     .NOTES
     More information can be found here: http://smsagent.wordpress.com/free-configmgr-reports/client-health-summary-report/
     The Parameters region should be updated for your environment before executing the script
-    Author: Trevor Jones @trevor_smsagent
-    v1.0 - 2016/11/02 - Intial release
 #>
 
 
