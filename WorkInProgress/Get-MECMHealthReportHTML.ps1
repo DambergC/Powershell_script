@@ -129,7 +129,11 @@ $StatusMessageSiteserver = Get-CMSiteStatusMessage -ComputerName $siteserver -Se
 #######################################
 $clientHealthSummary = Get-CMClientHealthSummary -CollectionName 'All systems'  
 
-$clientHealthSummarypercentage = [Math]::Round($clientHealthSummary.ClientsHealthy / $clientHealthSummary.ClientsTotal * 100)
+$DeviceWithoutClient = get-CMDevice | Where-Object { $_.IsClient -eq $false } | Sort-Object name | Select-Object Name
+
+$clientHealthSummaryWithoutClient = $clientHealthSummary.ClientsTotal - $DeviceWithoutClient.Count
+
+$clientHealthSummarypercentage = [Math]::Round($clientHealthSummary.ClientsHealthy / $clientHealthSummaryWithoutClient * 100)
 $clientHealthSummaryNOTPercentage = 100 - $clientHealthSummarypercentage
 
 
@@ -755,7 +759,7 @@ $html = $html + @"
 <table width="930" border="1">
   <tbody>
     <tr>
-        <td><h4>Summary Healthy Clients</h4>
+        <td><h4>Summary Healthy Device</h4>
       <table width="400">
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $clientHealthSummarypercentage -UseInventoryThresholds);color:#ffffff;" width="$($clientHealthSummarypercentage)%">
@@ -768,7 +772,7 @@ $html = $html + @"
       <table width="100%">
         <tr>
             <td width="80%">
-            Client Total
+            Device Total
             </td>
             <td width="20%">
             $($clientHealthSummary.ClientsTotal)
@@ -776,7 +780,7 @@ $html = $html + @"
         </tr>
         <tr>
             <td width="80%">
-            Client Healthy
+            Device Healthy
             </td>
             <td width="20%">
             $($clientHealthSummary.ClientsHealthy)
@@ -784,7 +788,7 @@ $html = $html + @"
         </tr>
         <tr>
             <td width="80%">
-            Client Unhealthy
+            Device Unhealthy
             </td>
             <td width="20%">
             $($clientHealthSummary.ClientsUnhealthy)
@@ -792,10 +796,18 @@ $html = $html + @"
         </tr>
         <tr>
             <td width="80%">
-            Client Health unknown
+            Device Health unknown
             </td>
             <td width="20%">
             $($clientHealthSummary.ClientsHealthUnknown)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Device without Client
+            </td>
+            <td width="20%">
+            $($DeviceWithoutClient.Count)
             </td>
         </tr>
       </table>
