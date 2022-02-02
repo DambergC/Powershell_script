@@ -44,6 +44,7 @@ $Thresholds.Inventory.Warning = 70
 # Siteconfiguration
 $sitecode = 'ps1'
 $siteserver = 'TH-mgt02.korsberga.local'
+$StatusMessageTime = (Get-Date).AddDays(-7)
 
 #endregion
 
@@ -113,16 +114,27 @@ function Set-PercentageColour
 #region Powershell Region
 #######################################################################
 
-  #######################################
-  # Powershell - ADR Status
-  #######################################
-  $ADRstatus = Get-CMSoftwareUpdateAutoDeploymentRule -Fast
+#######################################
+# Powershell - ADR Status
+#######################################
+$ADRstatus = Get-CMSoftwareUpdateAutoDeploymentRule -Fast
   
-  #######################################
-  # Powershell - StatusMessage Siteserver
-  #######################################
-  $StatusMessageSiteserver = Get-CMSiteStatusMessage -ComputerName $siteserver -Severity Error -SiteCode $sitecode
+#######################################
+# Powershell - StatusMessage Siteserver
+#######################################
+$StatusMessageSiteserver = Get-CMSiteStatusMessage -ComputerName $siteserver -Severity Error -SiteCode $sitecode -StartDateTime $StatusMessageTime
   
+#######################################
+# Powershell - Disk status Siteserver
+#######################################
+$DiskReport = Get-CimInstance win32_logicaldisk -Filter "Drivetype=3" -ErrorAction SilentlyContinue | Select-Object `
+@{Label = "HostName"; Expression = { $_.SystemName } },
+@{Label = "DriveLetter"; Expression = { $_.DeviceID } },
+@{Label = "DriveName"; Expression = { $_.VolumeName } },
+@{Label = "Total Capacity (GB)"; Expression = { "{0:N1}" -f ( $_.Size / 1gb) } },
+@{Label = "Free Space (GB)"; Expression = { "{0:N1}" -f ( $_.Freespace / 1gb ) } },
+@{Label = 'Free Space (%)'; Expression = { "{0:P0}" -f ($_.Freespace / $_.Size) } } 
+
   
 #endregion
 
@@ -559,7 +571,7 @@ $ADRstatus | ForEach-Object -Process {
   
 
   
-    $html = $html + @"
+  $html = $html + @"
     <table width="930" border="1" cellspacing="1">
     <tbody>
         <tr>
@@ -603,7 +615,7 @@ $html = $html + @"
     <tbody>
         <tr>
             <td>
-            <h4>StatusMessage Siteserver - last 24h</h4>
+            <h4>StatusMessage Siteserver $siteserver - last 7 days</h4>
         
         <table width="100%">
         <tr>
@@ -624,7 +636,7 @@ $StatusMessageSiteserver | ForEach-Object -Process {
   
 
   
-    $html = $html + @"
+  $html = $html + @"
     <table width="930" border="1" cellspacing="1">
     <tbody>
         <tr>
@@ -655,6 +667,75 @@ $StatusMessageSiteserver | ForEach-Object -Process {
 
 
 #endregion
+
+#######################################################################
+#region HTML Diskspace Siteserver
+#######################################################################
+
+# Set html
+$html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+            <h4>Diskstatus $siteserver</h4>
+        
+        <table width="100%">
+        <tr>
+            <td width="2%"></td>
+            <th width="20%" >DriveLetter</th>
+            <th width="20%" >Description</th>
+            <th width="20%" >Total Capacity (GB)</th>
+            <th width="20%" >Free Space (GB)</th>
+            <th width="20%" >Free Space (%)</th>
+        </tr>
+        </table>
+                    </td>
+        </tr>
+    </tbody>
+    </table>
+"@
+
+$DiskReport | ForEach-Object -Process {
+  
+  $html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+        <table width="100%">      
+        <tr  bgcolor="red">
+            <td width="2%"></td>
+            <td width="20%">
+            $($_.driveletter)
+            </td>
+            <td width="20%">
+            $($_.Drivename)
+            </td>
+            <td width="20%">
+            $($_.'Total Capacity (GB)')
+            </td>
+            <td width="20%">
+            $($_.'Free Space (GB)')
+            </td>
+            <td width="20%">
+            $($_.'Free Space (%)')
+            </td>
+
+        </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+    </table>
+"@
+  
+
+}
+
+
+#endregion
+
 
 #######################################################################
 #region HTML Client Versions
