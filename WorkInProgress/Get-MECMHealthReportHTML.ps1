@@ -44,7 +44,7 @@ $Thresholds.Inventory.Warning = 70
 # Siteconfiguration
 $sitecode = 'ps1'
 $siteserver = 'TH-mgt02.korsberga.local'
-$StatusMessageTime = (Get-Date).AddDays(-7)
+$StatusMessageTime = (Get-Date).AddDays(-2)
 
 #endregion
 
@@ -123,7 +123,17 @@ $ADRstatus = Get-CMSoftwareUpdateAutoDeploymentRule -Fast
 # Powershell - StatusMessage Siteserver
 #######################################
 $StatusMessageSiteserver = Get-CMSiteStatusMessage -ComputerName $siteserver -Severity Error -SiteCode $sitecode -StartDateTime $StatusMessageTime
-  
+
+#######################################
+# Powershell - Clienthealth summary
+#######################################
+$clientHealthSummary = Get-CMClientHealthSummary -CollectionName 'All systems'  
+
+$clientHealthSummarypercentage = [Math]::Round($clientHealthSummary.ClientsHealthy / $clientHealthSummary.ClientsTotal * 100)
+$clientHealthSummaryNOTPercentage = 100 - $clientHealthSummarypercentage
+
+
+
 #######################################
 # Powershell - Disk status Siteserver
 #######################################
@@ -137,7 +147,6 @@ $DiskReport = Get-CimInstance win32_logicaldisk -Filter "Drivetype=3" -ErrorActi
 
   
 #endregion
-
 
 #######################################################################
 #region Query Region
@@ -514,6 +523,7 @@ $html = @"
       text-align: left;
       padding-left: 10px;
       padding-right: 10px;
+      vertical-align:top;
        
       
     }
@@ -615,7 +625,7 @@ $html = $html + @"
     <tbody>
         <tr>
             <td>
-            <h4>StatusMessage Siteserver $siteserver - last 7 days</h4>
+            <h4>StatusMessage Siteserver $siteserver - since $StatusMessageTime</h4>
         
         <table width="100%">
         <tr>
@@ -736,6 +746,95 @@ $DiskReport | ForEach-Object -Process {
 
 #endregion
 
+#######################################################################
+#region HTML Client Health Check Summary
+#######################################################################
+
+# Set html
+$html = $html + @"
+<table width="930" border="1">
+  <tbody>
+    <tr>
+        <td><h4>Summary Healthy Clients</h4>
+      <table width="400">
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $clientHealthSummarypercentage -UseInventoryThresholds);color:#ffffff;" width="$($clientHealthSummarypercentage)%">
+          $($clientHealthSummarypercentage)%
+          </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($clientHealthSummaryNOTPercentage)%">
+          </td>
+        </tr>
+      </table>
+      <table width="100%">
+        <tr>
+            <td width="80%">
+            Client Total
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsTotal)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Client Healthy
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsHealthy)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Client Unhealthy
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsUnhealthy)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Client Health unknown
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsHealthUnknown)
+            </td>
+        </tr>
+      </table>
+      </td>
+      <td><h4>Active Clients Software Inventory</h4>
+      <table width="400">
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveSWCountPercentage -UseInventoryThresholds);color:#ffffff;" width="$($Data.ActiveSWCountPercentage)%">
+          $($Data.ActiveSWCountPercentage)%
+          </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InActiveSWCountPercentage)%">
+          </td>
+        </tr>
+      </table>
+      <table width="400">
+        <tr>
+            <td width="80%">
+            Active SW Inventory
+            </td>
+            <td width="20%">
+            $($Data.ActiveSWCount)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Inactive SW Inventory
+            </td>
+            <td width="20%">
+            $($Data.InActiveSWCount)
+            </td>
+        </tr>
+      </table>
+      </td>
+    </tr>
+  </tbody>
+</table>
+"@
+  
+#endregion
 
 #######################################################################
 #region HTML Client Versions
