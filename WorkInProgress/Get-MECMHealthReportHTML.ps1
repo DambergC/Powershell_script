@@ -93,7 +93,7 @@ function Set-PercentageColour
 
   If ($Value -ge $Good)
   {
-    $Hex = '#52B431' # Green
+    $Hex = '#90D7A5' # Green
   }
 
   If ($Value -ge $Warning -and $Value -lt $Good)
@@ -120,11 +120,6 @@ function Set-PercentageColour
 $ADRstatus = Get-CMSoftwareUpdateAutoDeploymentRule -Fast
   
 #######################################
-# Powershell - StatusMessage Siteserver
-#######################################
-$StatusMessageSiteserver = Get-CMSiteStatusMessage -ComputerName $siteserver -Severity Error -SiteCode $sitecode -StartDateTime $StatusMessageTime
-
-#######################################
 # Powershell - Clienthealth summary
 #######################################
 $clientHealthSummary = Get-CMClientHealthSummary -CollectionName 'All systems'  
@@ -136,20 +131,7 @@ $clientHealthSummaryWithoutClient = $clientHealthSummary.ClientsTotal - $DeviceW
 $clientHealthSummarypercentage = [Math]::Round($clientHealthSummary.ClientsHealthy / $clientHealthSummaryWithoutClient * 100)
 $clientHealthSummaryNOTPercentage = 100 - $clientHealthSummarypercentage
 
-
-
-#######################################
-# Powershell - Disk status Siteserver
-#######################################
-$DiskReport = Get-CimInstance win32_logicaldisk -Filter "Drivetype=3" -ErrorAction SilentlyContinue | Select-Object `
-@{Label = "HostName"; Expression = { $_.SystemName } },
-@{Label = "DriveLetter"; Expression = { $_.DeviceID } },
-@{Label = "DriveName"; Expression = { $_.VolumeName } },
-@{Label = "Total Capacity (GB)"; Expression = { "{0:N1}" -f ( $_.Size / 1gb) } },
-@{Label = "Free Space (GB)"; Expression = { "{0:N1}" -f ( $_.Freespace / 1gb ) } },
-@{Label = 'Free Space (%)'; Expression = { "{0:P0}" -f ($_.Freespace / $_.Size) } } 
-
-  
+ 
 #endregion
 
 #######################################################################
@@ -157,6 +139,86 @@ $DiskReport = Get-CimInstance win32_logicaldisk -Filter "Drivetype=3" -ErrorActi
 #######################################################################
 # Create has table to store data
 $Data = @{}
+
+###########################################
+# QUERY - Component Status
+###########################################
+$query = "SELECT distinct
+Case v_ComponentSummarizer.Status
+When 0 Then 'OK'
+When 1 Then 'Warning'
+When 2 Then 'Critical'
+Else ' '
+End As 'Status',
+SiteCode 'Site Code',
+MachineName 'Site System',
+ComponentName 'Component',
+Case v_componentSummarizer.State
+When 0 Then 'Stopped'
+When 1 Then 'Started'
+When 2 Then 'Paused'
+When 3 Then 'Installing'
+When 4 Then 'Re-Installing'
+When 5 Then 'De-Installing'
+Else ' '
+END AS 'Thread State',
+Errors 'Errors',
+Warnings 'Warnings',
+Infos 'Information',
+Case v_componentSummarizer.Type
+When 0 Then 'Autostarting'
+When 1 Then 'Scheduled'
+When 2 Then 'Manual'
+ELSE ' '
+END AS 'Startup Type',
+CASE AvailabilityState
+When 0 Then 'Online'
+When 3 Then 'Offline'
+ELSE ' '
+END AS 'Availability State',
+NextScheduledTime 'Next Scheduled',
+LastStarted 'Last Started',
+LastContacted 'Last Status Message',
+LastHeartbeat 'Last Heartbeat',
+HeartbeatInterval 'Heartbeat Interval',
+ComponentType 'Type'
+from v_ComponentSummarizer
+Where TallyInterval = '0001128000100008'
+Order By ComponentName"
+
+$data.ComponentStatus = Get-SQLData -Query $query
+
+###########################################
+# QUERY - Disk and SQL
+###########################################
+
+$query = "SELECT distinct
+Case v_SiteSystemSummarizer.Status
+When 0 Then 'OK'
+When 1 Then 'Warning'
+When 2 Then 'Critical'
+Else ' '
+End As 'Status',
+SiteCode 'Site Code',
+SUBSTRING(SiteSystem, CHARINDEX('\\', SiteSystem) + 2, CHARINDEX(']', SiteSystem) - CHARINDEX('\\', SiteSystem) - 3 ) AS 'Site System',REPLACE(Role, 'SMS', 'ConfigMgr') 'Role',
+SUBSTRING(SiteObject, CHARINDEX('Display=', SiteObject) + 8, CHARINDEX(']', SiteObject) - CHARINDEX('Display=',SiteObject) - 9) AS 'Storage Object',
+Case ObjectType
+When 0 Then 'Directory'
+When 1 Then 'SQL Database'
+When 2 Then 'SQL Transaction Log'
+Else ' '
+END AS 'Object Type',
+CAST(BytesTotal/1024 AS VARCHAR(49)) + 'MB' 'Total',
+CAST(BytesFree/1024 AS VARCHAR(49)) + 'MB' 'Free',
+CASE PercentFree
+When -1 Then 'Unknown'
+When -2 Then 'Automatically grow'
+ELSE CAST(PercentFree AS VARCHAR(49)) + '%'
+END AS '%Free'
+FROM v_SiteSystemSummarizer
+Order By 'Storage Object'"
+
+$Data.DiskSiteSQL = Get-SQLData -Query $Query
 
 ###########################################
 # QUERY - Discovered Systems With Clients Installed
@@ -525,17 +587,20 @@ $html = @"
       background-color: white;
       align: Left;
       text-align: left;
-      padding-left: 10px;
-      padding-right: 10px;
+      padding-left: 5px;
+      padding-right: 5px;
       vertical-align:top;
-       
+      font-size:11.5px
+
       
     }
 
+   
     h2,h3,h4{
         background-color:Darkblue;
         color:white;
         text-align: Left;
+        
     }
     tr {
         cellpadding: 5px;
@@ -547,6 +612,8 @@ $html = @"
         padding:2px
         text-align: left;
         }
+
+
 </style>
 
 
@@ -620,7 +687,7 @@ $ADRstatus | ForEach-Object -Process {
 #endregion
 
 #######################################################################
-#region HTML StatusMessage Siteserver
+#region HTML ComponentStatus Siteserver
 #######################################################################
 
 # Set html
@@ -629,14 +696,16 @@ $html = $html + @"
     <tbody>
         <tr>
             <td>
-            <h4>StatusMessage Siteserver $siteserver - since $StatusMessageTime</h4>
+            <h4>ComponentStatus $siteserver</h4>
         
         <table width="100%">
         <tr>
             <td width="2%"></td>
+            <th width="9%" >Status</th>
             <th width="50%" >Component</th>
-            <th width="20%" >MessageID</th>
-            <th width="30%" >Time</th>
+            <th width="25%" >Next Scheduled</th>
+            <th width="7%" >Error</th>
+            <th width="7%" >Warning</th>
 
         </tr>
         </table>
@@ -646,26 +715,33 @@ $html = $html + @"
     </table>
 "@
 
-$StatusMessageSiteserver | ForEach-Object -Process {
+$data.ComponentStatus | ForEach-Object -Process {
   
 
   
   $html = $html + @"
-    <table width="930" border="1" cellspacing="1">
+    <table width="930" border="1" cellspacing="0" align="left">
     <tbody>
-        <tr>
+        <tr align="left">
             <td>
         <table width="100%">      
-        <tr  bgcolor="red">
-            <td width="2%"></td>
+        <tr>
+            <td width="2%">
+            </td>
+            <td width="0%">
+            $($_.status)
+            </td>
             <td width="50%">
-            $($_.component)
+            $($_.Component)
             </td>
-            <td width="20%">
-            $($_.Messageid)
+            <td width="25%">
+            $($_.'next scheduled')
             </td>
-            <td width="30%">
-            $($_.time)
+            <td width="7%">
+            $($_.Errors)
+            </td>
+            <td width="7%">
+            $($_.warnings)
             </td>
 
         </tr>
@@ -683,7 +759,7 @@ $StatusMessageSiteserver | ForEach-Object -Process {
 #endregion
 
 #######################################################################
-#region HTML Diskspace Siteserver
+#region HTML Disk Site SQL Siteserver
 #######################################################################
 
 # Set html
@@ -692,16 +768,18 @@ $html = $html + @"
     <tbody>
         <tr>
             <td>
-            <h4>Diskstatus $siteserver</h4>
+            <h4>Status Disk Sql $siteserver</h4>
         
         <table width="100%">
         <tr>
-            <td width="2%"></td>
-            <th width="20%" >DriveLetter</th>
-            <th width="20%" >Description</th>
-            <th width="20%" >Total Capacity (GB)</th>
-            <th width="20%" >Free Space (GB)</th>
-            <th width="20%" >Free Space (%)</th>
+            
+            <th width="5%" >OK</th>
+            <th width="25%" >Site System</th>
+            <th width="23%" >Role</th>
+            <th width="15%" >ObjectType</th>
+            <th width="9%" >Total</th>
+            <th width="9%" >Free</th>
+            <th width="40%" >%Free</th>
         </tr>
         </table>
                     </td>
@@ -710,32 +788,39 @@ $html = $html + @"
     </table>
 "@
 
-$DiskReport | ForEach-Object -Process {
+$data.DiskSiteSQL | ForEach-Object -Process {
+  
+
   
   $html = $html + @"
-    <table width="930" border="1" cellspacing="1">
+    <table width="930" border="1" cellspacing="0" align="left">
     <tbody>
-        <tr>
+        <tr align="left">
             <td>
         <table width="100%">      
-        <tr  bgcolor="red">
-            <td width="2%"></td>
-            <td width="20%">
-            $($_.driveletter)
-            </td>
-            <td width="20%">
-            $($_.Drivename)
-            </td>
-            <td width="20%">
-            $($_.'Total Capacity (GB)')
-            </td>
-            <td width="20%">
-            $($_.'Free Space (GB)')
-            </td>
-            <td width="20%">
-            $($_.'Free Space (%)')
-            </td>
+        <tr>
 
+            <td width="5%">
+            $($_.status)
+            </td>
+            <td width="25%">
+            $($_.'Site System')
+            </td>
+            <td width="23%">
+            $($_.role)
+            </td>
+            <td width="15%">
+            $($_.'Object type')
+            </td>
+            <td width="9%">
+            $($_.Total)
+            </td>
+            <td width="9%">
+            $($_.free)
+            </td>
+            <td width="40%">
+            $($_.'%free')
+            </td>
         </tr>
                 </table>
             </td>
@@ -1207,13 +1292,15 @@ $html = $html + @"
 #region HTML Maintenance Task status
 #######################################################################
 
+$lastdate = (Get-Date).AddDays(-7)
+
 # Set html
 $html = $html + @"
     <table width="930" border="1">
     <tbody>
     <tr>
         <td>
-            <h4>Maintenance Task Status</h4>
+            <h4>Maintenance Task Status Last 24 hours since $lastdate</h4>
             <table width="100%">
                 <tr>
                     <th width="50%">Taskname</th>
@@ -1227,22 +1314,30 @@ $html = $html + @"
     </table>
 "@
 
+
+
+
 $Data.MWStatus | ForEach-Object -Process {
-  $html = $html + @"
+  
+if ($_.'lastCompletionTime' -gt $lastdate)
+{
+    
+    $html = $html + @"
     <table width="930" border="1">
     <tbody>
     <tr>
         <td>
-            <table width="100%">
+            <table width="100%" style="background-color: #90D7A5">
                 <tr>
 
-                    <td width="50%">
+                    <td width="50%" style="background-color: #90D7A5">
                     $($_.'Taskname')
                     </td>
-                         <td width="25%">
+
+                         <td width="25%" style="background-color: #90D7A5">
                     $($_.'LastStartTime')
                     </td>
-                            <td width="25%">
+                            <td width="25%" style="background-color: #90D7A5">
                     $($_.'LastCompletionTime')
                     </td>
 
@@ -1253,74 +1348,46 @@ $Data.MWStatus | ForEach-Object -Process {
     </tbody>
     </table>
 "@
+
 }
-#endregion
-
-#######################################################################
-#region HTML Database file size
-#######################################################################
-
-# Set html
-$html = $html + @"
+else
+{
+   
+   $html = $html + @"
     <table width="930" border="1">
     <tbody>
-    <tr>
+    <tr bgcolor="green">
         <td>
-            <h4>Databasefiles Status</h4>
-                <table width="100%">
+            <table width="100%" style="background-color: #E8B342">
                 <tr>
-                    <th width="40%">FileName</th>
-                    <th width="15%">FileSize (MB)</th>
-                    <th width="15%">UsedSpace (MB)</th>
-                    <th width="15%">FreeSpace (MB)</th>
-                    <th width="15%">GrowthSpace (MB)</th>
+
+                    <td width="50%" style="background-color: #E8B342">
+                    $($_.'Taskname')
+                    </td>
+
+                         <td width="25%" style="background-color: #E8B342">
+                    $($_.'LastStartTime')
+                    </td>
+                            <td width="25%" style="background-color: #E8B342">
+                    $($_.'LastCompletionTime')
+                    </td>
+
                 </tr>
-                </table>
+            </table>
         </td>
     </tr>
     </tbody>
     </table>
-
-"@
-
-$Data.DBStatus | ForEach-Object -Process {
-  $html = $html + @"
-  <table width="930" border="1">
-                <tbody>
-                <tr>
-                    <td>
-                        <table width="100%">
-                        <tr>
-                            <td width="40%">
-                            $($_.'DBName')
-                            </td>
-                            <td width="15%">
-                            $($_.'FileSize_MB')
-                            </td>
-                            <td width="15%">
-                            $($_.'UsedSpace_MB')
-                            </td>
-                            <td width="15%">
-                            $($_.'FreeSpace_MB')
-                            </td>
-                            <td width="15%">
-                            $($_.'GrowthSpace_MB')
-                            </td>
-                        </tr>
-                        </table>
-                                </td>
-                </tr>
-                </tbody>
-                </table>
-"@
-
-                
-  #@ -f $_.'DBName', $_.'FileSize_MB', $_.'UsedSpace_MB', $_.'FreeSpace_MB', $_.'GrowthSpace_MB')
+"@ 
+}
+  
+  
+  
 }
 #endregion
 
 #######################################################################
-#region HTML - Discoverd Systems with client & Active Clients
+#region HTML - Discoverd Systems with client & Active Clients Policty Request
 #######################################################################
 
 # Set html
@@ -1328,7 +1395,7 @@ $html = $html + @"
 <table width="930" border="1">
   <tbody>
     <tr>
-      <td><table width="400">
+      <td width="50%"><table width="400">
         <tr><h4> Discovered Systems with Client Installed</h4></tr>
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $Data.ClientCountPercentage);color:#ffffff;" width="$($Data.ClientCountPercentage)%"> $($Data.ClientCountPercentage)% </td>
@@ -1349,27 +1416,38 @@ $html = $html + @"
             <td width="20%"> $($Data.TotalDiscoveredSystems) </td>
           </tr>
       </table></td>
-      <td><h4>Active Clients</h4>
-        <table width="400">
-          <tr>
-            <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveCountPercentage);color:#ffffff;" width="$($Data.ActiveCountPercentage)%"> $($Data.ActiveCountPercentage)% </td>
-            <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InactiveCountPercentage)%"></td>
-          </tr>
-        </table>
-        <table width="400">
-          <tr>
-            <td width="80%"> Active Clients </td>
-            <td width="20%"> $($Data.ActiveCount) </td>
-          </tr>
-          <tr>
-            <td width="80%"> Inactive Clients </td>
-            <td width="20%"> $($Data.InActiveCount) </td>
-          </tr>
-          <tr>
-            <td width="80%"> Total </td>
-            <td width="20%"> $($Data.ActiveInactiveTotal) </td>
-          </tr>
-      </table></td>
+            <td width="445">
+                <table cellspacing="0">
+                    <tr><h4>Active Clients Policy Request</h4></tr>
+                </table>
+                <table width="400">
+                    <tr>
+                        <td style="background-color:$(Set-PercentageColour -Value $Data.ActivePRCountPercentage);color:#ffffff;" width="$($Data.ActivePRCountPercentage)%">
+                        $($Data.ActivePRCountPercentage)%
+                        </td>
+                        <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InActivePRCountPercentage)%">
+                        </td>
+                    </tr>
+                </table>
+                <table width="400">
+                    <tr>
+                        <td width="80%">
+                        Active Policy Request
+                        </td>
+                        <td width="20%">
+                        $($Data.ActivePRCount)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="80%">
+                        Inactive Policy Request
+                        </td>
+                        <td width="20%">
+                        $($Data.InActivePRCount)
+                        </td>
+                    </tr>
+                </table>
+            </td>
     </tr>
   </tbody>
 </table>
@@ -1524,57 +1602,6 @@ $html = $html + @"
 "@
 #endregion
 
-#######################################################################
-#region HTML Active PolicyRequest Count
-#######################################################################
-
-# Set html
-$html = $html + @"
-    <table width="930" border="1" bordercolor="black">
-    <tbody>
-        <tr>
-            <td width="400">
-                <table cellspacing="0">
-                    <tr><h4>Active Clients Policy Request</h4></tr>
-                </table>
-                <table width="400">
-                    <tr>
-                        <td style="background-color:$(Set-PercentageColour -Value $Data.ActivePRCountPercentage);color:#ffffff;" width="$($Data.ActivePRCountPercentage)%">
-                        $($Data.ActivePRCountPercentage)%
-                        </td>
-                        <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InActivePRCountPercentage)%">
-                        </td>
-                    </tr>
-                </table>
-                <table width="400">
-                    <tr>
-                        <td width="80%">
-                        Active Policy Request
-                        </td>
-                        <td width="20%">
-                        $($Data.ActivePRCount)
-                        </td>
-                    </tr>
-                    <tr>
-                        <td width="80%">
-                        Inactive Policy Request
-                        </td>
-                        <td width="20%">
-                        $($Data.InActivePRCount)
-                        </td>
-                    </tr>
-                </table>
-            </td>
-            <td>
-            </td>
-        </tr>
-    </tbody>
-    </table>
-"@
-
-
-
-#endregion
 
 #######################################################################
 #region Close html document...
