@@ -141,6 +141,30 @@ $clientHealthSummaryNOTPercentage = 100 - $clientHealthSummarypercentage
 $Data = @{}
 
 ###########################################
+# QUERY - Overall status Site
+###########################################
+$query ="Select
+SiteStatus.SiteCode, SiteInfo.SiteName, SiteStatus.Updated 'Time Stamp',
+Case SiteStatus.Status
+When 0 Then 'OK'
+When 1 Then 'Warning'
+When 2 Then 'Critical'
+Else ' '
+End AS 'Site Status',
+Case SiteInfo.Status
+When 1 Then 'Active'
+When 2 Then 'Pending'
+When 3 Then 'Failed'
+When 4 Then 'Deleted'
+When 5 Then 'Upgrade'
+Else ' '
+END AS 'Site State'
+From V_SummarizerSiteStatus SiteStatus Join v_Site SiteInfo on SiteStatus.SiteCode = SiteInfo.SiteCode
+Order By SiteCode" 
+
+$data.Sitestatus = Get-SQLData -Query $query
+
+###########################################
 # QUERY - Component Status
 ###########################################
 $query = "SELECT distinct
@@ -622,6 +646,111 @@ $html = @"
 #endregion
 
 #######################################################################
+#region HTML Overall Site Status
+#######################################################################
+
+# Set html
+$html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+            <h4>Overall Site Status</h4>
+        
+        <table width="100%">
+        <tr>
+
+            <th width="8%" >SiteCode</th>
+            <th width="40%" >SiteName</th>
+            <th width="20%" >TimeStamp</th>
+            <th width="15%" >Site Status</th>
+            <th width="15%" >Site State</th>
+        </tr>
+        </table>
+                    </td>
+        </tr>
+    </tbody>
+    </table>
+"@
+
+$data.Sitestatus | ForEach-Object -Process {
+  
+  if ($_.'Site Status' -eq 'OK')
+  {
+    $html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+        <table width="100%" style="background-color: #90D7A5">      
+        <tr>
+
+            <td width="8%" style="background-color: #90D7A5">
+            $($_.Sitecode)
+            </td>
+            <td width="40%" style="background-color: #90D7A5">
+            $($_.Sitename)
+            </td>
+            <td width="20%" style="background-color: #90D7A5">
+            $($_.'Time Stamp')
+            </td>
+            <td width="15%" style="background-color: #90D7A5">
+            $($_.'Site Status')
+            </td>
+            <td width="15%" style="background-color: #90D7A5">
+            $($_.'Site State')
+            </td>
+        </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+    </table>
+"@  
+  }
+  else
+  {
+    $html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+        <table width="100%" style="background-color: #E8B342">      
+        <tr>
+
+            <td width="8%" style="background-color: #E8B342">
+            $($_.Sitecode)
+            </td>
+            <td width="40%" style="background-color: #E8B342">
+            $($_.Sitename)
+            </td>
+            <td width="20%" style="background-color: #E8B342">
+            $($_.'Time Stamp')
+            </td>
+            <td width="15%" style="background-color: #E8B342">
+            $($_.'Site Status')
+            </td>
+            <td width="15%" style="background-color: #E8B342">
+            $($_.'Site State')
+            </td>
+        </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+    </table>
+"@  
+  }
+  
+  
+  
+
+}
+
+
+#endregion
+
+#######################################################################
 #region HTML ADR Status
 #######################################################################
 
@@ -844,7 +973,7 @@ $html = $html + @"
         <table width="100%">
         <tr>
             
-            <th width="5%" >OK</th>
+            <th width="5%" >Status</th>
             <th width="25%" >Site System</th>
             <th width="23%" >Role</th>
             <th width="15%" >ObjectType</th>
@@ -907,104 +1036,6 @@ $data.DiskSiteSQL | ForEach-Object -Process {
 #endregion
 
 #######################################################################
-#region HTML Client Health Check Summary
-#######################################################################
-
-# Set html
-$html = $html + @"
-<table width="930" border="1">
-  <tbody>
-    <tr>
-        <td><h4>Summary Healthy Device</h4>
-      <table width="400">
-        <tr>
-          <td style="background-color:$(Set-PercentageColour -Value $clientHealthSummarypercentage -UseInventoryThresholds);color:#ffffff;" width="$($clientHealthSummarypercentage)%">
-          $($clientHealthSummarypercentage)%
-          </td>
-          <td style="background-color:#eeeeee;color:#333333;" width="$($clientHealthSummaryNOTPercentage)%">
-          </td>
-        </tr>
-      </table>
-      <table width="100%">
-        <tr>
-            <td width="80%">
-            Device Total
-            </td>
-            <td width="20%">
-            $($clientHealthSummary.ClientsTotal)
-            </td>
-        </tr>
-        <tr>
-            <td width="80%">
-            Device Healthy
-            </td>
-            <td width="20%">
-            $($clientHealthSummary.ClientsHealthy)
-            </td>
-        </tr>
-        <tr>
-            <td width="80%">
-            Device Unhealthy
-            </td>
-            <td width="20%">
-            $($clientHealthSummary.ClientsUnhealthy)
-            </td>
-        </tr>
-        <tr>
-            <td width="80%">
-            Device Health unknown
-            </td>
-            <td width="20%">
-            $($clientHealthSummary.ClientsHealthUnknown)
-            </td>
-        </tr>
-        <tr>
-            <td width="80%">
-            Device without Client
-            </td>
-            <td width="20%">
-            $($DeviceWithoutClient.Count)
-            </td>
-        </tr>
-      </table>
-      </td>
-      <td><h4>Active Clients Software Inventory</h4>
-      <table width="400">
-        <tr>
-          <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveSWCountPercentage -UseInventoryThresholds);color:#ffffff;" width="$($Data.ActiveSWCountPercentage)%">
-          $($Data.ActiveSWCountPercentage)%
-          </td>
-          <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InActiveSWCountPercentage)%">
-          </td>
-        </tr>
-      </table>
-      <table width="400">
-        <tr>
-            <td width="80%">
-            Active SW Inventory
-            </td>
-            <td width="20%">
-            $($Data.ActiveSWCount)
-            </td>
-        </tr>
-        <tr>
-            <td width="80%">
-            Inactive SW Inventory
-            </td>
-            <td width="20%">
-            $($Data.InActiveSWCount)
-            </td>
-        </tr>
-      </table>
-      </td>
-    </tr>
-  </tbody>
-</table>
-"@
-  
-#endregion
-
-#######################################################################
 #region HTML Client Versions
 #######################################################################
     
@@ -1049,100 +1080,6 @@ $Data.ClientVersions | ForEach-Object -Process {
 </table>
 "@
 }
-#endregion
-
-#######################################################################
-#region HTML Get No Client Systems
-#######################################################################
-
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-            <h4>Systems with No Client</h4>
-                <table width="100%">
-                <tr>
-                    <th  width="60%">Category</th>
-                    <th  width="20%">Count</th>
-                    <th  width="20%">Percent</th>
-                </tr>
-                </table>
-            </td>
-        </tr>
-    </tbody>
-    </table>
-"@
-
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <table width="100%">
-                <tr>
-                    <td width="60%">
-                    Windows OS
-                    </td>
-                    <td width="20%">
-                    $($Data.NoClient.WindowsOS)
-                    </td>
-                    <td width="20%">
-                    $([Math]::Round($Data.NoClient.WindowsOS / $Data.NoClientCount * 100))%
-                    </td>
-                </tr>
-                <tr>
-                    <td width="60%">
-                    Other OS
-                    </td>
-                    <td width="20%">
-                    $($Data.NoClient.OtherOS)
-                    </td>
-                    <td width="20%">
-                    $([Math]::Round($Data.NoClient.OtherOS / $Data.NoClientCount * 100))%
-                    </td>
-                </tr>
-                <tr>
-                    <td width="60%">
-                    Unknown OS
-                    </td>
-                    <td width="20%">
-                    $($Data.NoClient.UnknownOS)
-                    </td>
-                    <td width="20%">
-                    $([Math]::Round($Data.NoClient.UnknownOS / $Data.NoClientCount * 100))%
-                    </td>
-                </tr>
-                <tr>
-                    <td width="60%">
-                    Last Logon > 7 days
-                    </td>
-                    <td width="20%">
-                    $($Data.NoClient.GTLast7)
-                    </td>
-                    <td width="20%">
-                    $([Math]::Round($Data.NoClient.GTLast7 / $Data.NoClientCount * 100))%
-                    </td>
-                </tr>
-                <tr>
-                    <td width="60%">
-                    Last Logon < 7 days
-                    </td>
-                    <td width="20%">
-                    $($Data.NoClient.LTLast7)
-                    </td>
-                    <td width="20%">
-                    $([Math]::Round($Data.NoClient.LTLast7 / $Data.NoClientCount * 100))%
-                    </td>
-                </tr>
-                </table>
-            </td>
-        </tr>
-    </tbody>
-    </table>
-"@
-
 #endregion
 
 #######################################################################
@@ -1673,6 +1610,89 @@ $html = $html + @"
 "@
 #endregion
 
+#######################################################################
+#region HTML Summary Healthy Device
+#######################################################################
+
+# Set html
+$html = $html + @"
+<table width="930" border="1">
+  <tbody>
+    <tr>
+        <td><h4>Summary Healthy Device</h4>
+      <table width="400">
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $clientHealthSummarypercentage -UseInventoryThresholds);color:#ffffff;" width="$($clientHealthSummarypercentage)%">
+          $($clientHealthSummarypercentage)%
+          </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($clientHealthSummaryNOTPercentage)%">
+          </td>
+        </tr>
+      </table>
+      <table width="100%">
+        <tr>
+            <td width="80%">
+            Device Total
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsTotal)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Device Healthy
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsHealthy)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Device Unhealthy
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsUnhealthy)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Device Health unknown
+            </td>
+            <td width="20%">
+            $($clientHealthSummary.ClientsHealthUnknown)
+            </td>
+        </tr>
+        <tr>
+            <td width="80%">
+            Device without Client
+            </td>
+            <td width="20%">
+            $($DeviceWithoutClient.Count)
+            </td>
+        </tr>
+      </table>
+      </td>
+      <td><h4></h4>
+      <table width="400">
+        <tr>
+
+        </tr>
+      </table>
+      <table width="400">
+        <tr>
+
+        </tr>
+        <tr>
+
+        </tr>
+      </table>
+      </td>
+    </tr>
+  </tbody>
+</table>
+"@
+  
+#endregion
 
 #######################################################################
 #region Close html document...
