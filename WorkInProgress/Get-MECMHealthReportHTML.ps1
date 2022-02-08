@@ -635,7 +635,7 @@ $html = $html + @"
         
         <table width="100%">
         <tr>
-            <td width="2%"></td>
+
             <th width="30%" >ADR Name</th>
             <th width="20%" >Last Error Code</th>
             <th width="25%" >Last Error Time</th>
@@ -650,26 +650,26 @@ $html = $html + @"
 
 $ADRstatus | ForEach-Object -Process {
   
-
-  
-  $html = $html + @"
+  if ($_.lasterrorcode -eq '0')
+  {
+    $html = $html + @"
     <table width="930" border="1" cellspacing="1">
     <tbody>
         <tr>
             <td>
-        <table width="100%">      
-        <tr  bgcolor="red">
-            <td width="2%"></td>
-            <td width="30%">
+        <table width="100%" style="background-color: #90D7A5">      
+        <tr>
+
+            <td width="28%" style="background-color: #90D7A5">
             $($_.name)
             </td>
-            <td width="20%">
+            <td width="20%" style="background-color: #90D7A5">
             $($_.lasterrorcode)
             </td>
-            <td width="25%">
+            <td width="25%" style="background-color: #90D7A5">
             $($_.lasterrortime)
             </td>
-            <td width="25%">
+            <td width="25%" style="background-color: #90D7A5">
             $($_.lastRuntime)
             </td>
         </tr>
@@ -678,7 +678,40 @@ $ADRstatus | ForEach-Object -Process {
         </tr>
     </tbody>
     </table>
-"@
+"@  
+  }
+  else
+  {
+    $html = $html + @"
+    <table width="930" border="1" cellspacing="1">
+    <tbody>
+        <tr>
+            <td>
+        <table width="100%" style="background-color: #E8B342">      
+        <tr>
+
+            <td width="28%" style="background-color: #E8B342">
+            $($_.name)
+            </td>
+            <td width="20%" style="background-color: #E8B342">
+            $($_.lasterrorcode)
+            </td>
+            <td width="25%" style="background-color: #E8B342">
+            $($_.lasterrortime)
+            </td>
+            <td width="25%" style="background-color: #E8B342">
+            $($_.lastRuntime)
+            </td>
+        </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+    </table>
+"@  
+  }
+  
+  
   
 
 }
@@ -717,30 +750,30 @@ $html = $html + @"
 
 $data.ComponentStatus | ForEach-Object -Process {
   
-
-  
-  $html = $html + @"
+  if ($_.status -eq 'OK')
+  {
+    $html = $html + @"
     <table width="930" border="1" cellspacing="0" align="left">
     <tbody>
         <tr align="left">
             <td>
-        <table width="100%">      
+        <table width="100%" style="background-color: #90D7A5">      
         <tr>
-            <td width="2%">
+            <td width="2%" style="background-color: #90D7A5">
             </td>
-            <td width="0%">
+            <td width="0%" style="background-color: #90D7A5">
             $($_.status)
             </td>
-            <td width="50%">
+            <td width="50%" style="background-color: #90D7A5">
             $($_.Component)
             </td>
-            <td width="25%">
+            <td width="25%" style="background-color: #90D7A5">
             $($_.'next scheduled')
             </td>
-            <td width="7%">
+            <td width="7%" style="background-color: #90D7A5">
             $($_.Errors)
             </td>
-            <td width="7%">
+            <td width="7%" style="background-color: #90D7A5">
             $($_.warnings)
             </td>
 
@@ -750,7 +783,45 @@ $data.ComponentStatus | ForEach-Object -Process {
         </tr>
     </tbody>
     </table>
-"@
+"@  
+  }
+  else
+  {
+     $html = $html + @"
+    <table width="930" border="1" cellspacing="0" align="left">
+    <tbody>
+        <tr align="left">
+            <td>
+        <table width="100%" style="background-color: #E8B342">      
+        <tr style="background-color: #E8B342">
+            <td width="2%" style="background-color: #E8B342">
+            </td>
+            <td width="0%" style="background-color: #E8B342">
+            $($_.status)
+            </td>
+            <td width="50%" style="background-color: #E8B342">
+            $($_.Component)
+            </td>
+            <td width="25%" style="background-color: #E8B342">
+            $($_.'next scheduled')
+            </td>
+            <td width="7%" style="background-color: #E8B342">
+            $($_.Errors)
+            </td>
+            <td width="7%" style="background-color: #E8B342">
+            $($_.warnings)
+            </td>
+
+        </tr>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+    </table>
+"@ 
+  }
+  
+  
   
 
 }
