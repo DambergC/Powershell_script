@@ -216,7 +216,6 @@ Else ' '
 END AS 'Site State'
 From V_SummarizerSiteStatus SiteStatus Join v_Site SiteInfo on SiteStatus.SiteCode = SiteInfo.SiteCode
 Order By SiteCode" 
-
 $data.Sitestatus = Get-SQLData -Query $query
 
 ###########################################
@@ -288,7 +287,6 @@ ELSE CAST(PercentFree AS VARCHAR(49)) + '%'
 END AS '%Free'
 FROM v_SiteSystemSummarizer
 Order By 'Storage Object'"
-
 $Data.DiskSiteSQL = Get-SQLData -Query $Query
 
 ###########################################
@@ -437,17 +435,31 @@ $Data.InActivePRCountPercentage = 100 - $Data.ActivePRCountPercentage
 ############################################ 
 
 $Query = "
-  Select sys.Client_Version0 as 'Client Version', count (sys.ResourceID) as 'Count' from v_R_System sys
-  inner join v_CH_ClientSummary ch on sys.ResourceID = ch.ResourceID
-  where ch.ClientActiveStatus = 1
-  Group by sys.Client_Version0
-  Order by sys.Client_Version0 desc
+Declare @CollectionID Varchar(8)
+Set @CollectionID = 'SMS00001'
+Select sys.Client_version0 as 'Client Version',
+CASE
+WHEN client_version0 = '5.00.8412.1000'Then'MECM 1606'
+WHEN client_version0 = '5.00.8853.1006'Then'MECM 1906'
+WHEN client_version0 = '5.00.9012.1020'Then'MECM 2006'
+WHEN client_version0 = '5.00.9068.1008'Then'MECM 2111'
+
+ELSE
+client_version0
+END as 'ConfigMgr Release',
+Count(DISTINCT sys.ResourceID) as 'Client Count',
+(STR((COUNT(sys.ResourceID)*100.0/(
+Select COUNT(SYS.ResourceID)
+From v_FullCollectionMembership FCM INNER JOIN V_R_System sys on FCM.ResourceID = SYS.ResourceID
+Where FCM.CollectionID = @CollectionID
+and
+Sys.Client0= '1')),5,2)) + ' %' AS 'Percent %'
+From v_FullCollectionMembership FCM INNER JOIN V_R_System sys on FCM.ResourceID = SYS.ResourceID
+Where SYS.Client0 = '1' and FCM.CollectionID = @CollectionID
+Group By sys.Client_version0
+Order by sys.Client_version0 DESC
 "
-$Data.ClientVersions = Get-SQLData -Query $Query
-$Data.TotalForClientVersions = [int]0
-$Data.ClientVersions | ForEach-Object -Process {
-  $Data.TotalForClientVersions = $Data.TotalForClientVersions + $_.Count
-}
+$Data.Clientversion = Get-SQLData -Query $Query
 
 
 ############################################
@@ -585,6 +597,13 @@ $Query = "
   inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
   inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
   where os.LastBootUpTime0 < DATEADD(MONTH,-6, GETDATE())
+  and ch.ClientActiveStatus = 1
+  UNION
+  select '12 months' as TimePeriod,Count(sys.Name0) as 'Count',6
+  from v_R_System sys
+  inner join v_GS_OPERATING_SYSTEM os on os.ResourceId = sys.ResourceId 
+  inner join v_CH_ClientSummary ch on ch.ResourceID = sys.ResourceID
+  where os.LastBootUpTime0 < DATEADD(MONTH,-12, GETDATE())
   and ch.ClientActiveStatus = 1
   Order By SortOrder
 "
@@ -748,6 +767,8 @@ $HTML = $html + $htmlData
 #######################################################################
 
 
+If ($data.ComponentStatus)
+{
 
 # Convert results to HTML
 $htmlData = $data.ComponentStatus | 
@@ -756,8 +777,6 @@ $htmlData = $data.ComponentStatus |
 $HTML = $html + $htmlData + "<h4>Last $SMCount Error or Warning Status Messages for...</h4>" 
 
 
-If ($data.ComponentStatus)
-{
 
     # Start PInvoke Code 
 $sigFormatMessage = @' 
@@ -899,114 +918,40 @@ $HTML = $html + $htmlData
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ClientVersions | 
-    ConvertTo-Html -Property "Version","Count","Percent" -Head $Style -Body "<h4>Client Version</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+$htmlData = $data.ClientVersion | 
+    ConvertTo-Html -Property "Client Version","Client Count","Percent %" -Head $Style -Body "<h4>Client Version</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
 $HTML = $html + $htmlData 
     
-# Set html
-$html = $html + @"
-<table width="930" border="1">
-    <tbody>
-	<tr>
-	    <th><h4>Client Versions</h4>
-        <table  width="100%">
-        <tr>
-            <th  width="60%">Version</th>
-            <th  width="20%">Count</th>
-            <th  width="20%">Percent</th>
-        </tr>
-        </table>
-        </th>
-    </tr>
-    </tbody>
-</table>
-"@
 
-$Data.ClientVersions | ForEach-Object -Process {
-  $Percentage = [Math]::Round($_.Count / $Data.TotalForClientVersions * 100)
-  $PercentageRemaining = (100 - $Percentage)
-  $html = $html + @"
-<table width="930">
-    <tbody>
-    <tr>
-        <td width="2%"></td>
-        <td width="60%">
-        $($_.'Client Version')
-        </td>
-        <td width="20%">
-        $($_.Count)
-        </td>
-        <td width="20%">
-        $($Percentage)%
-        </td>
-    </tr>
-    </tbody>
-</table>
-"@
-}
 #endregion
 
 #######################################################################
 #region HTML Windows Client Installation Failures
 #######################################################################
 
-
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <h4>Windows Client Installation Failures</h4>
-                <table width="100%">
-                <tr>
-                    <th  width="20%">Error Code</th>
-                    <th  width="60%">Error Description</th>
-                    <th  width="10%">Count</th>
-                    <th  width="10%">Percent</th>
-                </tr>
-                </table>
-            </td>
-        </tr>
-    </tbody>
-    </table>
-"@
-
-$Data.InstallFailures | ForEach-Object -Process {
-  $html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <table width="100%">
-                <tr>
-                    <td width="20%">
-                    $($_.'Error Code')
-                    </td>
-                    <td width="60%">
-                    $($_.'Error Description')
-                    </td>
-                    <td width="10%">
-                    $($_.Count)
-                    </td>
-                    <td width="10%">
-                    $($_.Percentage)%
-                    </td>
-                </tr>
-                </table>
-            </td>
-        </tr>
-    </tbody>
-    </table>
-"@
+if ($data.InstallFailures)
+{
+    # Convert results to HTML
+$htmlData = $data.InstallFailures | 
+    ConvertTo-Html -Property "Error Code","Error Description","Count","Percentage" -Head $Style -Body "<h4>Client Installation Failures</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
 }
+
+
 
 #endregion
 
 #######################################################################
 #region HTML Computer reboots
 #######################################################################
+
+    # Convert results to HTML
+$htmlData = $data.InstallFailures | 
+    ConvertTo-Html -Property "Error Code","Error Description","Count","Percentage" -Head $Style -Body "<h4>Client Installation Failures</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
 
 # Set html
 $html = $html + @"
@@ -1079,6 +1024,17 @@ $html = $html + @"
                             </td>
                             <td width="20%">
                             $([Math]::Round($Data.ComputerReboots[4].Count / $Data.ActiveLastBootUpTotal * 100))%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="60%">
+                            $($Data.ComputerReboots[5].TimePeriod)
+                            </td>
+                            <td width="20%">
+                            $($Data.ComputerReboots[5].Count)
+                            </td>
+                            <td width="20%">
+                            $([Math]::Round($Data.ComputerReboots[5].Count / $Data.ActiveLastBootUpTotal * 100))%
                             </td>
                         </tr>
                     </table>
