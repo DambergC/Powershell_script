@@ -190,13 +190,13 @@ $clientHealthSummaryNOTPercentage = 100 - $clientHealthSummarypercentage
 #endregion
 
 #######################################################################
-#region Query Region
+#Query Region
 #######################################################################
 # Create has table to store data
 $Data = @{}
 
 ###########################################
-# QUERY - Overall status Site
+#region QUERY - Overall status Site
 ###########################################
 $query ="Select
 SiteStatus.SiteCode, SiteInfo.SiteName, SiteStatus.Updated 'Time Stamp',
@@ -217,9 +217,10 @@ END AS 'Site State'
 From V_SummarizerSiteStatus SiteStatus Join v_Site SiteInfo on SiteStatus.SiteCode = SiteInfo.SiteCode
 Order By SiteCode" 
 $data.Sitestatus = Get-SQLData -Query $query
+#endregion
 
 ###########################################
-# QUERY - Component Status
+#region QUERY - Component Status
 ###########################################
 
 # SQL query for component status
@@ -256,10 +257,10 @@ and Status in (1,2)
 Order by Status,ComponentName
 "
 $data.ComponentStatus = Get-SQLData -Query $Query
-
+#endregion
 
 ###########################################
-# QUERY - Disk and SQL
+#region QUERY - Disk and SQL
 ###########################################
 
 $query = "SELECT distinct
@@ -288,9 +289,10 @@ END AS '%Free'
 FROM v_SiteSystemSummarizer
 Order By 'Storage Object'"
 $Data.DiskSiteSQL = Get-SQLData -Query $Query
+#endregion
 
 ###########################################
-# QUERY - Discovered Systems With Clients Installed
+#region QUERY - Discovered Systems With Clients Installed
 ###########################################
 
 $Query = "
@@ -308,9 +310,10 @@ $Data.NoClientCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty 
 $Data.ClientCountPercentage = [Math]::Round($Data.ClientCount / ($Data.ClientCount + $Data.NoClientCount) * 100)
 $Data.NoClientCountPercentage = 100 - $Data.ClientCountPercentage
 $Data.TotalDiscoveredSystems = $Data.ClientCount + $Data.NoClientCount
+#endregion
 
 ###########################################
-# QUERY - Active Clients
+#region QUERY - Active Clients
 ###########################################
 
 $Query = "
@@ -328,9 +331,10 @@ $Data.InactiveCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty 
 $Data.ActiveCountPercentage = [Math]::Round($Data.ActiveCount / ($Data.ActiveCount + $Data.InactiveCount) * 100)
 $Data.InActiveCountPercentage = 100 - $Data.ActiveCountPercentage
 $Data.ActiveInactiveTotal = $Data.ActiveCount + $Data.InactiveCount
+#endregion
 
 ###########################################
-# QUERY - Active/Pass Clients
+#region QUERY - Active/Pass Clients
 ###########################################
 
 $Query = "
@@ -353,28 +357,267 @@ $Data.ActiveUnknownCount = Get-SQLData -Query $Query | Select-Object -ExpandProp
 # Calculate Active/Pass Percentage
 $Data.ActivePassCountPercentage = [Math]::Round($Data.ActivePassCount / ($Data.ActivePassCount + $Data.ActiveFailCount + $Data.ActiveUnknownCount) * 100)
 $Data.ActiveNotPassCountPercentage = 100 - $Data.ActivePassCountPercentage
+#endregion
 
 ###########################################
-# QUERY - Active DDR
+#region QUERY - All Active Workstations Client Heartbeat (DDR) Status
 ###########################################
 
 $Query = "
-  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveDDR = 1 and ClientActiveStatus = 1
+  Declare @CollectionID as Varchar(8)
+Declare @TotalActive as Numeric(8)
+Declare @ActiveHeartBeatDDR as Numeric(8)
+Declare @InActiveHeartBeatDDR as Numeric(8)
+Set @CollectionID = 'SMS00001' --Specify the collection ID
+select @TotalActive = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (Ch.ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select @ActiveHeartBeatDDR = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveDDR = 1 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select @InActiveHeartBeatDDR = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveDDR = 0 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select
+@TotalActive as 'TotalActive',
+@ActiveHeartBeatDDR as 'ActiveHeartBeatDDR',
+@InActiveHeartBeatDDR as 'InActiveHeartBeatDDR',
+case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveHeartBeatDDR/ convert
+(float,@TotalActive)*100,2)) End as 'ActiveHeartBeatDDR%'
+
 "
-$Data.ActiveDDRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
-  
-# Get InActive DDR Count
+$Data.ActiveDDRWorkstationCount = Get-SQLData -Query $Query
+
+#endregion
+
+###########################################
+#region QUERY - All Active Servers Client Heartbeat (DDR) Status
+###########################################
+
 $Query = "
-  Select count(ResourceID) as 'Count' from v_CH_ClientSummary where IsActiveDDR = 0 and ClientActiveStatus = 1
+  Declare @CollectionID as Varchar(8)
+Declare @TotalActive as Numeric(8)
+Declare @ActiveHeartBeatDDR as Numeric(8)
+Declare @InActiveHeartBeatDDR as Numeric(8)
+Set @CollectionID = 'SMS00001' --Specify the collection ID
+select @TotalActive = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (Ch.ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Server%')
+)
+select @ActiveHeartBeatDDR = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveDDR = 1 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Server%')
+)
+select @InActiveHeartBeatDDR = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveDDR = 0 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Server%')
+)
+select
+@TotalActive as 'TotalActive',
+@ActiveHeartBeatDDR as 'ActiveHeartBeatDDR',
+@InActiveHeartBeatDDR as 'InActiveHeartBeatDDR',
+case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveHeartBeatDDR/
+convert (float,@TotalActive)*100,2)) End as 'ActiveHeartBeatDDR%'
+
+
 "
-$Data.InActiveDDRCount = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+$Data.ActiveDDRServerCount = Get-SQLData -Query $Query
   
-# Calculate Active DDR Percentage
-$Data.ActiveDDRCountPercentage = [Math]::Round($Data.ActiveDDRCount / ($Data.ActiveDDRCount + $Data.InActiveDDRCount) * 100)
-$Data.InActiveDDRCountPercentage = 100 - $Data.ActiveDDRCountPercentage
+#endregion
+
+###########################################
+#region QUERY - All Active Workstations Client Hardware Inventory Status
+###########################################
+
+$Query = "
+ Declare @CollectionID as Varchar(8)
+Declare @TotalActive as Numeric(8)
+Declare @ActiveHWInv as Numeric(8)
+Declare @InActiveHWInv as Numeric(8)
+Set @CollectionID = 'SMS00001' --Specify the collection ID
+select @TotalActive = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (Ch.ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select @ActiveHWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveHW = 1 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select @InActiveHWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveHW = 0 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select
+@TotalActive as 'TotalActive',
+@ActiveHWInv as 'ActiveHWInv',
+@InActiveHWInv as 'InActiveHWInv',
+case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveHWInv/ convert (float,@TotalActive)*100,2))
+End as 'ActiveHWInv%'
+"
+$Data.ActiveHardWareInventoryWorkstationCount = Get-SQLData -Query $Query
+
+#endregion
+
+###########################################
+#region QUERY - All Active Servers Client Hardware Inventory Status
+###########################################
+
+$Query = "
+Declare @CollectionID as Varchar(8)
+Declare @TotalActive as Numeric(8)
+Declare @ActiveHWInv as Numeric(8)
+Declare @InActiveHWInv as Numeric(8)
+Set @CollectionID = 'SMS00001' --Specify the collection ID
+select @TotalActive = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (Ch.ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Server%')
+)
+select @ActiveHWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveHW = 1 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Server%')
+)
+select @InActiveHWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveHW = 0 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Server%')
+)
+select
+@TotalActive as 'TotalActive',
+@ActiveHWInv as 'ActiveHWInv',
+@InActiveHWInv as 'InActiveHWInv',
+case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveHWInv/ convert
+(float,@TotalActive)*100,2)) End as 'ActiveHWInv%'
+
+
+"
+$Data.ActiveHardWareInventoryServerCount = Get-SQLData -Query $Query
+  
+#endregion
+###########################################
+
+#region QUERY - All Active Workstations Client Software Inventory Status
+###########################################
+
+$Query = "
+Declare @CollectionID as Varchar(8)
+Declare @TotalActive as Numeric(8)
+Declare @ActiveSWInv as Numeric(8)
+Declare @InActiveSWInv as Numeric(8)
+Set @CollectionID = 'SMS00001' --Specify the collection ID
+select @TotalActive = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (Ch.ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select @ActiveSWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveSW = 1 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select @InActiveSWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveSW = 0 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Workstation%')
+)
+select
+@TotalActive as 'TotalActive',
+@ActiveSWInv as 'ActiveSWInv',
+@InActiveSWInv as 'InActiveSWInv',
+case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveSWInv/ convert (float,@TotalActive)*100,2))
+End as 'ActiveSWInv%'
+"
+$Data.ActiveSoftwareInventoryWorkstationCount = Get-SQLData -Query $Query
+
+#endregion
+
+###########################################
+#region QUERY - All Active Servers Client Software Inventory Status
+###########################################
+
+$Query = "
+Declare @CollectionID as Varchar(8)
+Declare @TotalActive as Numeric(8)
+Declare @ActiveSWInv as Numeric(8)
+Declare @InActiveSWInv as Numeric(8)
+Set @CollectionID = 'SMS00001' --Specify the collection ID
+select @TotalActive = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (Ch.ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Servers%')
+)
+select @ActiveSWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveSW = 1 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Servers%')
+)
+select @InActiveSWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveSW = 0 and ClientActiveStatus = 1) and Vrs.Operating_System_Name_and0 like '%Servers%')
+)
+select
+@TotalActive as 'TotalActive',
+@ActiveSWInv as 'ActiveSWInv',
+@InActiveSWInv as 'InActiveSWInv',
+case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveSWInv/ convert
+(float,@TotalActive)*100,2)) End as 'ActiveSWInv%'
+"
+$Data.ActiveSoftwareInventoryServerCount = Get-SQLData -Query $Query
+  
+#endregion
 
 ############################################
-# QUERY - Hardware Inventory
+#region QUERY - Hardware Inventory
 ############################################
 
 $Query = "
@@ -391,9 +634,10 @@ $Data.InActiveHWCount = Get-SQLData -Query $Query | Select-Object -ExpandPropert
 # Calculate Active HW Percentage
 $Data.ActiveHWCountPercentage = [Math]::Round($Data.ActiveHWCount / ($Data.ActiveHWCount + $Data.InActiveHWCount) * 100)
 $Data.InActiveHWCountPercentage = 100 - $Data.ActiveHWCountPercentage
+#endregion
 
 ############################################
-# QUERY - Software Inventory
+#region QUERY - Software Inventory
 ############################################  
   
 $Query = "
@@ -410,9 +654,10 @@ $Data.InActiveSWCount = Get-SQLData -Query $Query | Select-Object -ExpandPropert
 # Calculate Active SW Percentage
 $Data.ActiveSWCountPercentage = [Math]::Round($Data.ActiveSWCount / ($Data.ActiveSWCount + $Data.InActiveSWCount) * 100)
 $Data.InActiveSWCountPercentage = 100 - $Data.ActiveSWCountPercentage
+#endregion
 
 ############################################
-# QUERY - Policy Request
+#region QUERY - Policy Request
 ############################################ 
 
 $Query = "
@@ -429,9 +674,10 @@ $Data.InActivePRCount = Get-SQLData -Query $Query | Select-Object -ExpandPropert
 # Calculate Active PolicyRequest Percentage
 $Data.ActivePRCountPercentage = [Math]::Round($Data.ActivePRCount / ($Data.ActivePRCount + $Data.InActivePRCount) * 100)
 $Data.InActivePRCountPercentage = 100 - $Data.ActivePRCountPercentage  
+#endregion
 
 ############################################
-# QUERY - Client Version
+#region QUERY - Client Version
 ############################################ 
 
 $Query = "
@@ -460,10 +706,10 @@ Group By sys.Client_version0
 Order by sys.Client_version0 DESC
 "
 $Data.Clientversion = Get-SQLData -Query $Query
-
+#endregion
 
 ############################################
-# QUERY - No Client System
+#region QUERY - No Client System
 ############################################
 
 $Data.NoClient = @{}
@@ -512,9 +758,10 @@ $Query = "
   and (DATEDIFF(day,Last_Logon_Timestamp0, GetDate())) < 7
 "
 $Data.NoClient.LTLast7 = Get-SQLData -Query $Query | Select-Object -ExpandProperty Count
+#endregion
 
 ############################################
-# QUERY - Client Installation failure
+#region QUERY - Client Installation failure
 ############################################
 
 $Query = "
@@ -547,9 +794,10 @@ Select-Object -Property Count, 'Error Code', @{
   }
 } |
 Sort-Object -Property Count -Descending
+#endregion
 
 ############################################
-# QUERY - Computer Reboots
+#region QUERY - Computer Reboots
 ############################################
 
 # Active systems with a known Last BootUp Time
@@ -608,9 +856,31 @@ $Query = "
   Order By SortOrder
 "
 $Data.ComputerReboots = Get-SQLData -Query $Query
+#endregion
 
 ############################################
-# QUERY - Client Health Thresholds
+#region QUERY - DP Status
+############################################
+
+$Query = "
+select UPPER
+(SUBSTRING(PSD.ServerNALPath,13,CHARINDEX('.', PSd.ServerNALPath) -13)) AS [DP Name],
+count(*) [Targeted] ,
+count(CASE when PSD.State='0' then '*' END) AS 'Installed',
+count(CASE when PSD.State not in ('0') then '*' END) AS 'Not Installed',
+round((CAST(SUM (CASE WHEN PSD.State='0' THEN 1 ELSE 0 END) as float)/COUNT(psd.PackageID ) )*100,2) as 'Success%',
+psd.SiteCode [Reporting Site]
+From v_PackageStatusDistPointsSumm psd,SMSPackages P
+where p.PackageType!=4
+and (p.PkgID=psd.PackageID)
+group by PSd.ServerNALPath,psd.SiteCode
+"
+
+$Data.DPstatus = Get-SQLData -Query $Query
+#endregion
+
+############################################
+#region QUERY - Client Health Thresholds
 ############################################
 
 $Query = '
@@ -620,9 +890,10 @@ $Query = '
 '
 
 $Data.CHSettings = Get-SQLData -Query $Query 
+#endregion
 
 ############################################
-# QUERY - Maintenance Task Status
+#region QUERY - Maintenance Task Status
 ############################################
 
 $Query = '
@@ -634,9 +905,10 @@ $Query = '
 '
 
 $Data.MWStatus = Get-SQLData -Query $Query
+#endregion
 
 ############################################
-# QUERY - Database File size
+#region QUERY - Database File size
 ############################################
 
 $Query = "
@@ -678,7 +950,12 @@ th {
 }
 h4 {
     color: Yellow;
-    width:930px;
+    
+}
+
+body {
+width: 930px;
+
 }
 </style>
 "@
@@ -744,7 +1021,7 @@ $html = @"
 
 # Convert results to HTML
 $htmlData = $data.Sitestatus | 
-    ConvertTo-Html -Property "Sitecode","SiteName","TimeStamp","Site Status","Site State" -Head $Style -Body "<h4>Overall Site Status</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    ConvertTo-Html -Property "Sitecode","SiteName","TimeStamp","Site Status","Site State" -Head $Style -Body "<Table><tr><td><h4>Overall Site Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
 $HTML = $html + $htmlData 
 
@@ -756,7 +1033,7 @@ $HTML = $html + $htmlData
 
 # Convert results to HTML
 $htmlData = $ADRstatus | 
-    ConvertTo-Html -Property "Name","LastErrorCode","LastErrorTime","LastRunTime" -Head $Style -Body "<h4>ADR Status</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    ConvertTo-Html -Property "Name","LastErrorCode","LastErrorTime","LastRunTime" -Head $Style -Body "<Table><tr><td><h4>ADR Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
 $HTML = $html + $htmlData 
 
@@ -772,7 +1049,7 @@ If ($data.ComponentStatus)
 
 # Convert results to HTML
 $htmlData = $data.ComponentStatus | 
-    ConvertTo-Html -Property "ComponentName","ComponentType","Status","State","AvailabilityState","Infos","Warnings","Errors" -Head $Style -Body "<h4>Components in a Warning or Error State</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    ConvertTo-Html -Property "ComponentName","ComponentType","Status","State","AvailabilityState","Infos","Warnings","Errors" -Head $Style -Body "<Table><tr><td><h4>Components in a Warning or Error State</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
 $HTML = $html + $htmlData + "<h4>Last $SMCount Error or Warning Status Messages for...</h4>" 
 
@@ -892,7 +1169,7 @@ public static extern IntPtr LoadLibrary(string lpFileName);
         # Add to the HTML code
         $HTML = $HTML + (
             $StatusMessages | 
-                ConvertTo-Html -Property "Severity","Date / Time","MessageID","Description" -Head $Style -Body "<h4>$Component</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+                ConvertTo-Html -Property "Severity","Date / Time","MessageID","Description" -Head $Style -Body "<Table><tr><td><h4>$Component</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
                 Out-String
             )
 
@@ -907,7 +1184,7 @@ public static extern IntPtr LoadLibrary(string lpFileName);
 
 # Convert results to HTML
 $htmlData = $data.DiskSiteSQL | 
-    ConvertTo-Html -Property "Status","Site System","Role","ObjectType","Total","Free","%Free" -Head $Style -Body "<h4>Disk & SQL Status</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    ConvertTo-Html -Property "Status","Site System","Role","ObjectType","Total","Free","%Free" -Head $Style -Body "<Table><tr><td><h4>Disk & SQL Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
 $HTML = $html + $htmlData 
 
@@ -919,7 +1196,7 @@ $HTML = $html + $htmlData
 
 # Convert results to HTML
 $htmlData = $data.ClientVersion | 
-    ConvertTo-Html -Property "Client Version","Client Count","Percent %" -Head $Style -Body "<h4>Client Version</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    ConvertTo-Html -Property "Client Version","Client Count","Percent %" -Head $Style -Body "<Table><tr><td><h4>Client Version</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
 $HTML = $html + $htmlData 
     
@@ -934,285 +1211,203 @@ if ($data.InstallFailures)
 {
     # Convert results to HTML
 $htmlData = $data.InstallFailures | 
-    ConvertTo-Html -Property "Error Code","Error Description","Count","Percentage" -Head $Style -Body "<h4>Client Installation Failures</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    ConvertTo-Html -Property "Error Code","Error Description","Count","Percentage" -Head $Style -Body "<Table><tr><td><h4>Client Installation Failures</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
 $HTML = $html + $htmlData 
 }
 
-
-
-#endregion
-
-#######################################################################
-#region HTML Computer reboots
-#######################################################################
-
-    # Convert results to HTML
-$htmlData = $data.InstallFailures | 
-    ConvertTo-Html -Property "Error Code","Error Description","Count","Percentage" -Head $Style -Body "<h4>Client Installation Failures</h4>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
-$HTML = $html + $htmlData 
-
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <h4>Computers Not Rebooted</h4>
-                    <table width="100%">
-                    <tr>
-                        <th  width="60%">Time Period</th>
-                        <th  width="20%">Count</th>
-                        <th  width="20%">Percent*</th>
-                    </tr>
-                    </table>
-"@
-
-$html = $html + @"
-                    <table width="100%">
-                        <tr>
-                            <td width="60%">
-                            $($Data.ComputerReboots[0].TimePeriod)
-                            </td>
-                            <td width="20%">
-                            $($Data.ComputerReboots[0].Count)
-                            </td>
-                            <td width="20%">
-                            $([Math]::Round($Data.ComputerReboots[0].Count / $Data.ActiveLastBootUpTotal * 100))%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td width="60%">
-                            $($Data.ComputerReboots[1].TimePeriod)
-                            </td>
-                            <td width="20%">
-                            $($Data.ComputerReboots[1].Count)
-                            </td>
-                            <td width="20%">
-                            $([Math]::Round($Data.ComputerReboots[1].Count / $Data.ActiveLastBootUpTotal * 100))%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td width="60%">
-                            $($Data.ComputerReboots[2].TimePeriod)
-                            </td>
-                            <td width="20%">
-                            $($Data.ComputerReboots[2].Count)
-                            </td>
-                            <td width="20%">
-                            $([Math]::Round($Data.ComputerReboots[2].Count / $Data.ActiveLastBootUpTotal * 100))%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td width="60%">
-                            $($Data.ComputerReboots[3].TimePeriod)
-                            </td>
-                            <td width="20%">
-                            $($Data.ComputerReboots[3].Count)
-                            </td>
-                            <td width="20%">
-                            $([Math]::Round($Data.ComputerReboots[3].Count / $Data.ActiveLastBootUpTotal * 100))%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td width="60%">
-                            $($Data.ComputerReboots[4].TimePeriod)
-                            </td>
-                            <td width="20%">
-                            $($Data.ComputerReboots[4].Count)
-                            </td>
-                            <td width="20%">
-                            $([Math]::Round($Data.ComputerReboots[4].Count / $Data.ActiveLastBootUpTotal * 100))%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td width="60%">
-                            $($Data.ComputerReboots[5].TimePeriod)
-                            </td>
-                            <td width="20%">
-                            $($Data.ComputerReboots[5].Count)
-                            </td>
-                            <td width="20%">
-                            $([Math]::Round($Data.ComputerReboots[5].Count / $Data.ActiveLastBootUpTotal * 100))%
-                            </td>
-                        </tr>
-                    </table>
-                    <div style="font-size: 12px">* Percentage is calculated from the total number of active clients that have a known last bootup time ($($Data.ActiveLastBootUpTotal))</div>
-                </td>
-            </tr>
-    </tbody>
-    </table>
-"@
-
-#endregion
-
-#######################################################################
-#region HTML Client Health Thresholds
-#######################################################################
-
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <h4>Client Status Settings</h4>
-                    <table width="100%">
-                    <tr>
-                        <th  width="75%">Setting</th>
-                        <th  width="25%">Days</th>
-                    </tr>
-                    </table>
-"@
-
-$html = $html + @"
-                    <table width="100%">
-                    <tr>
-                        <td width="75%">
-                        Heartbeat Discovery
-                        </td>
-                        <td width="25%">
-                        $($Data.CHSettings.DDRInactiveInterval)
-                        </td>
-                    </tr>
-                    <tr>
-                        <td width="75%">
-                        Hardware Inventory
-                        </td>
-                        <td width="25%">
-                        $($Data.CHSettings.HWInactiveInterval)
-                        </td>
-                    </tr>
-                    <tr>
-                        <td width="75%">
-                        Software Inventory
-                        </td>
-                        <td width="25%">
-                        $($Data.CHSettings.SWInactiveInterval)
-                        </td>
-                    </tr>
-                    <tr>
-                        <td width="75%">
-                        Policy Requests
-                        </td>
-                        <td width="25%">
-                        $($Data.CHSettings.PolicyInactiveInterval)
-                        </td>
-                    </tr>
-                    <tr>
-                        <td width="75%">
-                        Status History Retention
-                        </td>
-                        <td width="25%">
-                        $($Data.CHSettings.CleanUpInterval)
-                        </td>
-                    </tr>
-                    
-                    </table>
-                </td>
-            </tr>
-    </tbody>
-    </table>
-"@
 #endregion
 
 #######################################################################
 #region HTML Maintenance Task status
 #######################################################################
 
-$lastdate = (Get-Date).AddDays(-7)
+# Convert results to HTML
+$htmlData = $data.MWStatus | 
+    ConvertTo-Html -Property "TaskName","LastStartTime","LastCompletionTime" -Head $Style -Body "<Table><tr><td><h4>Maintenance Task Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
 
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-    <tr>
-        <td>
-            <h4>Maintenance Task Status Last 24 hours since $lastdate</h4>
-            <table width="100%">
-                <tr>
-                    <th width="50%">Taskname</th>
-                    <th width="25%">LastStartTime</th>
-                    <th width="25%">LastCompletionTime</th>
-                </tr>
-            </table>
-       </td>
-    </tr>
-    </tbody>
-    </table>
+
+
+#endregion
+
+#######################################################################
+#region HTML DP Status
+#######################################################################
+
+# Convert results to HTML
+$htmlData = $data.DPstatus | 
+    ConvertTo-Html -Property "DP Name","Targeted","Installed","Success%" -Head $Style -Body "<Table><tr><td><h4>Distribution Point Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
+
+$DPstatusTargeted = $data.DPstatus.'Success%'
+$DPstatusNotInstalled = 100 -$data.DPstatus.'Success%'
+
+$html = $html + @" 
+        <table>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $DPstatusTargeted);color:#ffffff;" width="$($DPstatusTargeted)%"> $($DPstatusTargeted)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($DPstatusNotInstalled)%"></td>
+        </tr>
+        </table>
+
+"@
+
+#endregion
+
+#######################################################################
+#region HTML All Active Workstations Client Heartbeat (DDR) Status
+#######################################################################
+
+# Convert results to HTML
+$htmlData = $data.ActiveDDRWorkstationCount | 
+    ConvertTo-Html -Property "TotalActive","ActiveHeartBeatDDR","InActiveHeartBeatDDR","ActiveHeartBeatDDR%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstations Client Heartbeat (DDR) Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
+
+$DDRWorkstatioActive = $data.ActiveDDRWorkstationCount.'ActiveHeartBeatDDR%'
+$DDRWorkstatioInactive = 100 -$data.ActiveDDRWorkstationCount.'ActiveHeartBeatDDR%'
+
+$html = $html + @" 
+        <table>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $DDRWorkstatioActive);color:#ffffff;" width="$($DDRWorkstatioActive)%"> $($DDRWorkstatioActive)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($DDRWorkstatioInActive)%"></td>
+        </tr>
+        </table>
+
 "@
 
 
 
+#endregion
 
-$Data.MWStatus | ForEach-Object -Process {
-  
-if ($_.'lastCompletionTime' -gt $lastdate)
-{
-    
-    $html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-    <tr>
-        <td>
-            <table width="100%" style="background-color: #90D7A5">
-                <tr>
+#######################################################################
+#region HTML All Active Server Client Heartbeat (DDR) Status
+#######################################################################
 
-                    <td width="50%" style="background-color: #90D7A5">
-                    $($_.'Taskname')
-                    </td>
+# Convert results to HTML
+$htmlData = $data.ActiveDDRServerCount | 
+    ConvertTo-Html -Property "TotalActive","ActiveHeartBeatDDR","InActiveHeartBeatDDR","ActiveHeartBeatDDR%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstations Client Heartbeat (DDR) Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
 
-                         <td width="25%" style="background-color: #90D7A5">
-                    $($_.'LastStartTime')
-                    </td>
-                            <td width="25%" style="background-color: #90D7A5">
-                    $($_.'LastCompletionTime')
-                    </td>
+$ServerDDRActive = $data.ActiveDDRServerCount.'ActiveHeartBeatDDR%'
+$ServerDDRInactive = 100 -$data.ActiveDDRServerCount.'ActiveHeartBeatDDR%'
 
-                </tr>
-            </table>
-        </td>
-    </tr>
-    </tbody>
-    </table>
+$html = $html + @" 
+        <table>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $ServerDDRActive);color:#ffffff;" width="$($ServerDDRActive)%"> $($ServerDDRActive)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($ServerDDRInactive)%"></td>
+        </tr>
+        </table>
+
 "@
 
-}
-else
-{
-   
-   $html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-    <tr bgcolor="green">
-        <td>
-            <table width="100%" style="background-color: #E8B342">
-                <tr>
 
-                    <td width="50%" style="background-color: #E8B342">
-                    $($_.'Taskname')
-                    </td>
+#endregion
 
-                         <td width="25%" style="background-color: #E8B342">
-                    $($_.'LastStartTime')
-                    </td>
-                            <td width="25%" style="background-color: #E8B342">
-                    $($_.'LastCompletionTime')
-                    </td>
+#######################################################################
+#region HTML All Active Workstations Client Hardware Inventory Status
+#######################################################################
 
-                </tr>
-            </table>
-        </td>
-    </tr>
-    </tbody>
-    </table>
-"@ 
-}
-  
-  
-  
-}
+# Convert results to HTML
+$htmlData = $data.ActiveHardWareInventoryWorkstationCount | 
+    ConvertTo-Html -Property "TotalActive","ActiveHWInv","InActiveHWInv","ActiveHWInv%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstations Client Hardware Inventory Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
+
+$WorkstationHWInvActive = $data.ActiveHardWareInventoryWorkstationCount.'ActiveHWInv%'
+$WorkstationHWInvInactive = 100 -$data.ActiveHardWareInventoryWorkstationCount.'ActiveHWInv%'
+
+$html = $html + @" 
+        <table>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $WorkstationHWInvActive);color:#ffffff;" width="$($WorkstationDDRActive)%"> $($WorkstationDDRActive)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($WorkstationHWInvInactive)%"></td>
+        </tr>
+        </table>
+
+"@
+
+#endregion
+
+#######################################################################
+#region HTML All Active Servers Client Hardware Inventory Status
+#######################################################################
+
+# Convert results to HTML
+$htmlData = $data.ActiveHardWareInventoryServerCount | 
+    ConvertTo-Html -Property "TotalActive","ActiveHWInv","InActiveHWInv","ActiveHWInv%" -Head $Style -Body "<Table><tr><td><h4>All Active Servers Client Hardware Inventory Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
+
+$HardWareInventoryServerActive = $data.ActiveHardWareInventoryServerCount.'ActiveHWInv%'
+$HardWareInventoryServerInactive = 100 -$data.ActiveHardWareInventoryServerCount.'ActiveHWInv%'
+
+$html = $html + @" 
+        <table>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $HardWareInventoryServerActive);color:#ffffff;" width="$($HardWareInventoryServerActive)%"> $($HardWareInventoryServerActive)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($HardWareInventoryServerInActive)%"></td>
+        </tr>
+        </table>
+
+"@
+
+#endregion
+
+#######################################################################
+#region HTML All Active Workstations Client Software Inventory Status
+#######################################################################
+
+# Convert results to HTML
+$htmlData = $data.ActiveSoftwareInventoryWorkstationCount | 
+    ConvertTo-Html -Property "TotalActive","ActiveSWInv","InActiveSWInv","ActiveSWInv%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstations Client Software Inventory Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
+
+$WorkstationSWInvActive = $data.ActiveSoftwareInventoryWorkstationCount.'ActiveSWInv%'
+$WorkstationSWInvInactive = 100 -$data.ActiveSoftwareInventoryWorkstationCount.'ActiveSWInv%'
+
+$html = $html + @" 
+        <table>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $WorkstationSWInvActive);color:#ffffff;" width="$($WorkstationSWInvActive)%"> $($WorkstationSWInvActive)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($WorkstationSWInvInactive)%"></td>
+        </tr>
+        </table>
+
+"@
+
+#endregion
+
+#######################################################################
+#region HTML All Active Servers Client Software Inventory Status
+#######################################################################
+
+# Convert results to HTML
+$htmlData = $data.ActiveHardWareInventoryServerCount | 
+    ConvertTo-Html -Property "TotalActive","ActiveHWInv","InActiveHWInv","ActiveHWInv%" -Head $Style -Body "<Table><tr><td><h4>All Active Servers Client Software Inventory Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
+
+$HardWareInventoryServerActive = $data.ActiveHardWareInventoryServerCount.'ActiveHWInv%'
+$HardWareInventoryServerInactive = 100 -$data.ActiveHardWareInventoryServerCount.'ActiveHWInv%'
+
+$html = $html + @" 
+        <table>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $HardWareInventoryServerActive);color:#ffffff;" width="$($WorkstationDDRActive)%"> $($HardWareInventoryServerActive)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($HardWareInventoryServerInActive)%"></td>
+        </tr>
+        </table>
+
+"@
+
 #endregion
 
 #######################################################################
@@ -1359,79 +1554,6 @@ $html = $html + @"
 #endregion
 
 #######################################################################
-#region HTML Hardware Inventory & Software Inventory
-#######################################################################
-
-# Set html
-$html = $html + @"
-<table width="930" border="1">
-  <tbody>
-    <tr>
-        <td><h4>Active Clients Hardware Inventory</h4>
-      <table width="400">
-        <tr>
-          <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveHWCountPercentage -UseInventoryThresholds);color:#ffffff;" width="$($Data.ActiveHWCountPercentage)%">
-          $($Data.ActiveHWCountPercentage)%
-          </td>
-          <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InActiveHWCountPercentage)%">
-          </td>
-        </tr>
-      </table>
-      <table width="400">
-        <tr>
-            <td width="80%">
-            Active HW Inventory
-            </td>
-            <td width="20%">
-            $($Data.ActiveHWCount)
-            </td>
-        </tr>
-        <tr>
-            <td width="80%">
-            Inactive HW Inventory
-            </td>
-            <td width="20%">
-            $($Data.InActiveHWCount)
-            </td>
-        </tr>
-      </table>
-      </td>
-      <td><h4>Active Clients Software Inventory</h4>
-      <table width="400">
-        <tr>
-          <td style="background-color:$(Set-PercentageColour -Value $Data.ActiveSWCountPercentage -UseInventoryThresholds);color:#ffffff;" width="$($Data.ActiveSWCountPercentage)%">
-          $($Data.ActiveSWCountPercentage)%
-          </td>
-          <td style="background-color:#eeeeee;color:#333333;" width="$($Data.InActiveSWCountPercentage)%">
-          </td>
-        </tr>
-      </table>
-      <table width="400">
-        <tr>
-            <td width="80%">
-            Active SW Inventory
-            </td>
-            <td width="20%">
-            $($Data.ActiveSWCount)
-            </td>
-        </tr>
-        <tr>
-            <td width="80%">
-            Inactive SW Inventory
-            </td>
-            <td width="20%">
-            $($Data.InActiveSWCount)
-            </td>
-        </tr>
-      </table>
-      </td>
-    </tr>
-  </tbody>
-</table>
-"@
-#endregion
-
-#######################################################################
 #region HTML Summary Healthy Device
 #######################################################################
 
@@ -1516,6 +1638,76 @@ $html = $html + @"
 #endregion
 
 #######################################################################
+#region HTML Client Health Thresholds
+#######################################################################
+
+# Set html
+$html = $html + @"
+    <table width="930" border="1">
+    <tbody>
+        <tr>
+            <td>
+                <h4>Client Status Settings</h4>
+                    <table width="100%">
+                    <tr>
+                        <th  width="75%">Setting</th>
+                        <th  width="25%">Days</th>
+                    </tr>
+                    </table>
+"@
+
+$html = $html + @"
+                    <table width="100%">
+                    <tr>
+                        <td width="75%">
+                        Heartbeat Discovery
+                        </td>
+                        <td width="25%">
+                        $($Data.CHSettings.DDRInactiveInterval)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="75%">
+                        Hardware Inventory
+                        </td>
+                        <td width="25%">
+                        $($Data.CHSettings.HWInactiveInterval)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="75%">
+                        Software Inventory
+                        </td>
+                        <td width="25%">
+                        $($Data.CHSettings.SWInactiveInterval)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="75%">
+                        Policy Requests
+                        </td>
+                        <td width="25%">
+                        $($Data.CHSettings.PolicyInactiveInterval)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="75%">
+                        Status History Retention
+                        </td>
+                        <td width="25%">
+                        $($Data.CHSettings.CleanUpInterval)
+                        </td>
+                    </tr>
+                    
+                    </table>
+                </td>
+            </tr>
+    </tbody>
+    </table>
+"@
+#endregion
+
+#######################################################################
 #region Close html document...
 #######################################################################
 $html = $html + @"
@@ -1528,7 +1720,7 @@ $html = $html + @"
 # Send email
 #######################################################################
 
-#Send-MailMessage @EmailParams -Body $html -BodyAsHtml
+Send-MailMessage @EmailParams -Body $html -BodyAsHtml
 
 #######################################################################
 # Test, enable this row to generate html-page
