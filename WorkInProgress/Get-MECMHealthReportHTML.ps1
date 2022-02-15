@@ -172,7 +172,7 @@ function Get-StatusMessage {
 #######################################
 # Powershell - ADR Status
 #######################################
-$ADRstatus = Get-CMSoftwareUpdateAutoDeploymentRule -Fast
+$datainbox = Get-WmiObject -Class Win32_PerfFormattedData_SMSINBOXMONITOR_SMSInbox -ComputerName th-mgt02| Where-Object filecurrentcount -gt '0' | Select-Object -Property PSComputerName, Name, FileCurrentCount
   
 
 #endregion
@@ -1189,6 +1189,18 @@ $HTML = $html + $htmlData
 #endregion
 
 #######################################################################
+#region HTML DP Status
+#######################################################################
+
+# Convert results to HTML
+$htmlData = $datainbox | 
+    ConvertTo-Html -Property "Name","FileCurrentCount" -Head $Style -Body "<Table><tr><td><h4>Inbox Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+    Out-String
+$HTML = $html + $htmlData 
+
+#endregion
+
+#######################################################################
 # Clients section
 #######################################################################
 # Set html
@@ -1369,6 +1381,7 @@ $htmlData = $data.ClientDiskspace   |
 $HTML = $html + $htmlData 
 
 #endregion
+
 #######################################################################
 # Applications and Packages section
 #######################################################################
