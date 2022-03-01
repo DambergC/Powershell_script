@@ -57,6 +57,10 @@ $script:SMSMSGSLocation = “$env:SMS_ADMIN_UI_PATH\00000409”
 #######################################################################
 #region Functions
 #######################################################################
+
+    #Remove-Module EnhancedHTML2
+    Import-Module EnhancedHTML2
+
 # Function to run a sql query
 function Get-SQLData 
 {
@@ -173,7 +177,8 @@ function Get-StatusMessage {
 # Powershell - ADR Status
 #######################################
 $datainbox = Get-WmiObject -Class Win32_PerfFormattedData_SMSINBOXMONITOR_SMSInbox -ComputerName th-mgt02| Where-Object filecurrentcount -gt '0' | Select-Object -Property PSComputerName, Name, FileCurrentCount
-  
+
+$dataevents = get-eventlog system -After (Get-Date).AddDays(-7) -EntryType Error  
 
 #endregion
 
@@ -312,6 +317,7 @@ WHEN client_version0 = '5.00.8412.1000'Then'MECM 1606'
 WHEN client_version0 = '5.00.8853.1006'Then'MECM 1906'
 WHEN client_version0 = '5.00.9012.1020'Then'MECM 2006'
 WHEN client_version0 = '5.00.9068.1008'Then'MECM 2111'
+WHEN client_version0 = '5.00.9068.1012'Then'MECM 2111 hotfix KB12959506'
 
 ELSE
 client_version0
@@ -850,123 +856,131 @@ $Data.PackageDeployment = Get-SQLData -Query $Query
 #region Create html header
 #######################################################################
 # Html CSS style
-$Style = @"
+
+
+$style = @"
 <style>
-table { 
-    border-collapse: collapse;
-    width: 930px;
+body {
+    color:#333333;
+    font-family:Calibri,Tahoma;
+    font-size: 10pt;
 }
-td, th { 
-    border: 1px solid #ddd;
-    padding: 8px;
+
+h1 {
+    text-align:center;
 }
-th {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    text-align: left;
-    background-color: #4286f4;
-    color: white;
+
+h2 {
+    border-top:1px solid #666666;
 }
 h4 {
-    color: Yellow;
-    
+    border-top:1px solid #666666;
 }
 
-body {
-width: 930px;
-
+th {
+    font-weight:bold;
+    color:#eeeeee;
+    background-color:#333333;
+    cursor:pointer;
 }
+
+.odd  { background-color:#ffffff; }
+
+.even { background-color:#dddddd; }
+
+.ok { background-color:lightgreen; }
+
+.warning { background-color:lightyellow; }
+
+.error { background-color:lightred; }
+
+.paginate_enabled_next, .paginate_enabled_previous {
+    cursor:pointer; 
+    border:1px solid #222222; 
+    background-color:#dddddd; 
+    padding:2px; 
+    margin:4px;
+    border-radius:2px;
+}
+
+.paginate_disabled_previous, .paginate_disabled_next {
+    color:#666666; 
+    cursor:pointer;
+    background-color:#dddddd; 
+    padding:2px; 
+    margin:4px;
+    border-radius:2px;
+}
+
+.dataTables_info { margin-bottom:4px; }
+
+.sectionheader { cursor:pointer; }
+
+.sectionheader:hover { color:red; }
+
+.grid { width:100% }
+
+.red {
+    color:red;
+    font-weight:bold;
+} 
 </style>
 "@
-
 
 
 
 $html = @"
 <!DOCTYPE html>
 <html>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+
 <body>
 
-<style>
-    body
-  {
-      background-color: Gainsboro;
-  }
 
-    table, th, td{
-      border: 5px ;
-      background-color: white;
-      align: Left;
-      text-align: left;
-      padding-left: 5px;
-      padding-right: 5px;
-      vertical-align:top;
-      font-size:11.5px
-
-      
-    }
-
-   
-    h2,h3,h4{
-        background-color:Darkblue;
-        color:white;
-        text-align: Left;
-        
-    }
-    tr {
-        cellpadding: 5px;
-        }
-
-     td {
-        padding-top:2px;
-        padding-bottom:2px
-        padding:2px
-        text-align: left;
-        }
-
-
-</style>
 
 
 "@
 
 #endregion
 
-#######################################################################
-# SYSTEM
-#######################################################################
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <br>
-                <br>
-                <h4>SYSTEM section</h4>
-                <br>
-                <br>
-            </td>
-        </tr>
-        <tr>
-        <td>
-        This section presents data...
-        </td>
-        </tr>
-    </tbody>
-    </table>
-"@
+
 
 #######################################################################
 #region HTML Overall Site Status
 #######################################################################
 
-# Convert results to HTML
-$htmlData = $data.Sitestatus | 
-    ConvertTo-Html -Property "Sitecode","SiteName","TimeStamp","Site Status","Site State" -Head $Style -Body "<Table><tr><td><h4>Overall Site Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+if ($data.Sitestatus.'Site Status' -eq 'OK')
+{
+           $params = @{'As'='Table';
+                    'PreContent'='<h4>&diams; Site Status</h4>';
+                    'EvenRowCssClass'='ok';
+                    'OddRowCssClass'='ok';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';} 
+}
+
+if ($data.Sitestatus.'Site Status' -eq 'Warning')
+{
+           $params = @{'As'='Table';
+                    'PreContent'='<h4>&diams; Site Status</h4>';
+                    'EvenRowCssClass'='warning';
+                    'OddRowCssClass'='warning';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';} 
+}
+
+if ($data.Sitestatus.'Site Status' -eq 'Error')
+{
+           $params = @{'As'='Table';
+                    'PreContent'='<h4>&diams; Site Status</h4>';
+                    'EvenRowCssClass'='error';
+                    'OddRowCssClass'='error';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';} 
+}        
+
+
+        $htmlData = $data.sitestatus |
+                   ConvertTo-EnhancedHTMLFragment @params
 $HTML = $html + $htmlData 
 
 #endregion
@@ -975,11 +989,20 @@ $HTML = $html + $htmlData
 #region HTML All ADR Status
 #######################################################################
 
+
 # Convert results to HTML
-$htmlData = $data.ADRStatus | 
-    ConvertTo-Html -Property "Name","LastRuntime","LastRun","Status" -Head $Style -Body "<Table><tr><td><h4>ADR Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
-$HTML = $html + $htmlData 
+
+
+        $params = @{'As'='Table';
+                    'PreContent'='<h4>&diams; Automatic Deployment Rules</h4>';
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.ADRStatus |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties name,Status,AutodeploymentEnabled,Lastruntime,Lasterrorcode,Lastrun
+        $HTML = $html + $htmlData 
 
 #endregion
 
@@ -992,11 +1015,18 @@ If ($data.ComponentStatus)
 {
 
 # Convert results to HTML
-$htmlData = $data.ComponentStatus | 
-    ConvertTo-Html -Property "ComponentName","ComponentType","Status","State","AvailabilityState","Infos","Warnings","Errors" -Head $Style -Body "<Table><tr><td><h4>Components in a Warning or Error State</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
-$HTML = $html + $htmlData + "<Table><tr><td><h4>Last $SMCount Error or Warning Status Messages for...</h4></td></tr></table>" 
 
+        $params = @{'As'='Table';
+                    'PreContent'='<h4>&diams; Component Status</h4>';
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.Componentstatus |
+                   ConvertTo-EnhancedHTMLFragment @params
+
+        $HTML = $html + $htmlData
 
 
     # Start PInvoke Code 
@@ -1099,23 +1129,33 @@ public static extern IntPtr LoadLibrary(string lpFileName);
 
             $StatusMessage = New-Object psobject
             Add-Member -InputObject $StatusMessage -Name Severity -MemberType NoteProperty -Value $Row.SeverityName
-            Add-Member -InputObject $StatusMessage -Name Type -MemberType NoteProperty -Value $Row.Type
-            Add-Member -InputObject $StatusMessage -Name SiteCode -MemberType NoteProperty -Value $Row.SiteCode
+            #Add-Member -InputObject $StatusMessage -Name Type -MemberType NoteProperty -Value $Row.Type
+            #Add-Member -InputObject $StatusMessage -Name SiteCode -MemberType NoteProperty -Value $Row.SiteCode
             Add-Member -InputObject $StatusMessage -Name "Date / Time" -MemberType NoteProperty -Value $Row.Time
-            Add-Member -InputObject $StatusMessage -Name System -MemberType NoteProperty -Value $Row.MachineName
+            #Add-Member -InputObject $StatusMessage -Name System -MemberType NoteProperty -Value $Row.MachineName
             Add-Member -InputObject $StatusMessage -Name Component -MemberType NoteProperty -Value $Row.Component
-            Add-Member -InputObject $StatusMessage -Name Module -MemberType NoteProperty -Value $Row.ModuleName
-            Add-Member -InputObject $StatusMessage -Name MessageID -MemberType NoteProperty -Value $Row.MessageID
+            #Add-Member -InputObject $StatusMessage -Name Module -MemberType NoteProperty -Value $Row.ModuleName
+            #Add-Member -InputObject $StatusMessage -Name MessageID -MemberType NoteProperty -Value $Row.MessageID
             Add-Member -InputObject $StatusMessage -Name Description -MemberType NoteProperty -Value $Message.MessageString
             $StatusMessages += $StatusMessage
         }
 
+        
+        
         # Add to the HTML code
-        $HTML = $HTML + (
-            $StatusMessages | 
-                ConvertTo-Html -Property "Severity","Date / Time","MessageID","Description" -Head $Style -Body "<Table><tr><td><h4>$Component</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-                Out-String
-            )
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Status Messages Last:$SMCount </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $StatusMessages |
+                   ConvertTo-EnhancedHTMLFragment @params
+
+$HTML = $html + $htmlData
+
 
     }
 }
@@ -1127,9 +1167,17 @@ public static extern IntPtr LoadLibrary(string lpFileName);
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.MWStatus | 
-    ConvertTo-Html -Property "TaskName","LastStartTime","LastCompletionTime","Status" -Head $Style -Body "<Table><tr><td><h4>Maintenance Task Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Maintenance Task Status </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.MWStatus |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties TaskName,LastStartTime,LastCompletionTime,Status
+
 $HTML = $html + $htmlData 
 
 
@@ -1141,9 +1189,18 @@ $HTML = $html + $htmlData
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.DiskSiteSQL | 
-    ConvertTo-Html -Property "Status","Site System","Role","ObjectType","Total","Free","%Free" -Head $Style -Body "<Table><tr><td><h4>Disk & SQL Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Disk & SQL status </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.Disksitesql |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties status,'site system',"Object Type",Total,Free,%Free
+
+
 $HTML = $html + $htmlData 
 
 #endregion
@@ -1153,9 +1210,17 @@ $HTML = $html + $htmlData
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ClientVersion | 
-    ConvertTo-Html -Property "Client Version","Client Count","Percent %" -Head $Style -Body "<Table><tr><td><h4>Client Version</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Client Versions </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.Clientversion |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties "Client Version","ConfigMgr Release","Client Count","Percent %"
+
 $HTML = $html + $htmlData 
     
 
@@ -1167,10 +1232,17 @@ $HTML = $html + $htmlData
 
 if ($data.InstallFailures)
 {
-    # Convert results to HTML
-$htmlData = $data.InstallFailures | 
-    ConvertTo-Html -Property "Error Code","Error Description","Count","Percentage" -Head $Style -Body "<Table><tr><td><h4>Client Installation Failures</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Client Installation Status (Failures) </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.InstallFailures |
+                   ConvertTo-EnhancedHTMLFragment @params
+
 $HTML = $html + $htmlData 
 }
 
@@ -1181,60 +1253,86 @@ $HTML = $html + $htmlData
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.DPstatus | 
-    ConvertTo-Html -Property "DP Name","Targeted","Installed","Success%" -Head $Style -Body "<Table><tr><td><h4>Distribution Point Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Distribution Point Status </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.DPstatus |
+                   ConvertTo-EnhancedHTMLFragment @params
+
 $HTML = $html + $htmlData 
 
 #endregion
 
 #######################################################################
-#region HTML DP Status
+#region HTML Inbox Status
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $datainbox | 
-    ConvertTo-Html -Property "Name","FileCurrentCount" -Head $Style -Body "<Table><tr><td><h4>Inbox Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Inbox Status </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $datainbox |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties PScomputername,Name,FileCurrentCount
+
+
 $HTML = $html + $htmlData 
 
 #endregion
 
 #######################################################################
-# Clients section
+#region HTML Events Status
 #######################################################################
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <br>
-                <br>
-                <h4>Status Clients</h4>
-                <br>
-                <br>
-            </td>
-        </tr>
-    </tbody>
-    </table>
-"@
+
+# Convert results to HTML
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; System Events last 7 days</h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $dataevents |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties EntryType,Source,Message
+
+
+$HTML = $html + $htmlData 
+
+#endregion
+
 
 #######################################################################
 #region HTML All Client Status
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.WorkstationClientCount | 
-    ConvertTo-Html -Property "TotalSystem","WithClient","NoClient","WithClient%" -Head $Style -Body "<Table><tr><td><h4>All Workstation Client Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; All Workstation Client Status</h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.WorkstationClientCount |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties "TotalSystem","WithClient","NoClient","WithClient%"
+
 $HTML = $html + $htmlData 
 
 $WorkstationClientCount = $data.WorkstationClientCount.'WithClient%'
 $WorkstationNoClientCount = 100 -$data.WorkstationClientCount.'WithClient%'
 
 $html = $html + @" 
-        <table>
+        <table width=100%>
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $WorkstationClientCount);color:#ffffff;" width="$($WorkstationClientCount)%"> $($WorkstationClientCount)% </td>
           <td style="background-color:#eeeeee;color:#333333;" width="$($WorkstationNoClientCount)%"></td>
@@ -1250,16 +1348,24 @@ $html = $html + @"
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ActiveDDRWorkstationCount | 
-    ConvertTo-Html -Property "TotalActive","ActiveHeartBeatDDR","InActiveHeartBeatDDR","ActiveHeartBeatDDR%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstations Client Heartbeat (DDR) Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; All Active Workstations Client Heartbeat (DDR) Status</h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.ActiveDDRWorkstationCount |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties "TotalActive","ActiveHeartBeatDDR","InActiveHeartBeatDDR","ActiveHeartBeatDDR%"
+
 $HTML = $html + $htmlData 
 
 $DDRWorkstatioActive = $data.ActiveDDRWorkstationCount.'ActiveHeartBeatDDR%'
 $DDRWorkstatioInactive = 100 -$data.ActiveDDRWorkstationCount.'ActiveHeartBeatDDR%'
 
 $html = $html + @" 
-        <table>
+        <table width=100%>
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $DDRWorkstatioActive);color:#ffffff;" width="$($DDRWorkstatioActive)%"> $($DDRWorkstatioActive)% </td>
           <td style="background-color:#eeeeee;color:#333333;" width="$($DDRWorkstatioInActive)%"></td>
@@ -1277,16 +1383,24 @@ $html = $html + @"
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ActiveHardWareInventoryWorkstationCount | 
-    ConvertTo-Html -Property "TotalActive","ActiveHWInv","InActiveHWInv","ActiveHWInv%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstations Client Hardware Inventory Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; All Active Workstations Client Hardware Inventory Status</h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.ActiveHardWareInventoryWorkstationCount |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties "TotalActive","ActiveHWInv","InActiveHWInv","ActiveHWInv%"
+
 $HTML = $html + $htmlData 
 
 $WorkstationHWInvActive = $data.ActiveHardWareInventoryWorkstationCount.'ActiveHWInv%'
 $WorkstationHWInvInactive = 100 -$data.ActiveHardWareInventoryWorkstationCount.'ActiveHWInv%'
 
 $html = $html + @" 
-        <table>
+        <table width=100%>
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $WorkstationHWInvActive);color:#ffffff;" width="$($WorkstationDDRActive)%"> $($WorkstationDDRActive)% </td>
           <td style="background-color:#eeeeee;color:#333333;" width="$($WorkstationHWInvInactive)%"></td>
@@ -1302,16 +1416,25 @@ $html = $html + @"
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ActiveSoftwareInventoryWorkstationCount | 
-    ConvertTo-Html -Property "TotalActive","ActiveSWInv","InActiveSWInv","ActiveSWInv%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstations Client Software Inventory Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; All Active Workstations Client Software Inventory Status</h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.ActiveSoftwareInventoryWorkstationCount |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties "TotalActive","ActiveSWInv","InActiveSWInv","ActiveSWInv%"
+
+
 $HTML = $html + $htmlData 
 
 $WorkstationSWInvActive = $data.ActiveSoftwareInventoryWorkstationCount.'ActiveSWInv%'
 $WorkstationSWInvInactive = 100 -$data.ActiveSoftwareInventoryWorkstationCount.'ActiveSWInv%'
 
 $html = $html + @" 
-        <table>
+        <table width=100%>
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $WorkstationSWInvActive);color:#ffffff;" width="$($WorkstationSWInvActive)%"> $($WorkstationSWInvActive)% </td>
           <td style="background-color:#eeeeee;color:#333333;" width="$($WorkstationSWInvInactive)%"></td>
@@ -1323,44 +1446,26 @@ $html = $html + @"
 #endregion
 
 #######################################################################
-#region HTML All Active Client Policy Request Status
-#######################################################################
-
-# Convert results to HTML
-$htmlData = $data.ActiveWorkstationPolicyRequestCount | 
-    ConvertTo-Html -Property "TotalActive","ActivePolicyRequest","InActivePolicyRequest","ActivePolicyRequest%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstation Client PolicyRequest Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
-$HTML = $html + $htmlData 
-
-$PolicyRequestWorkstationActive = $data.ActiveWorkstationPolicyRequestCount.'ActivePolicyRequest%'
-$PolicyRequestWorkstationInactive = 100 -$data.ActiveWorkstationPolicyRequestCount.'ActivePolicyRequest%'
-
-$html = $html + @" 
-        <table>
-        <tr>
-          <td style="background-color:$(Set-PercentageColour -Value $PolicyRequestWorkstationActive);color:#ffffff;" width="$($PolicyRequestWorkstationActive)%"> $($PolicyRequestWorkstationActive)% </td>
-          <td style="background-color:#eeeeee;color:#333333;" width="$($PolicyRequestWorkstationInactive)%"></td>
-        </tr>
-        </table>
-
-"@
-#endregion
-
-#######################################################################
 #region HTML All Active Health Evaluation Status
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ActiveWorkstationHealthEvalutionCount   | 
-    ConvertTo-Html -Property "TotalActive","Active_Pass","Active_Fail","Active_Unknown","Active_Pass%" -Head $Style -Body "<Table><tr><td><h4>All Active Workstation Health Evaluation Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
+
+
+
+
+$htmlData = $data.ActiveWorkstationHealthEvalutionCount | 
+    ConvertTo-Html -Property "TotalActive","Active_Pass","Active_Fail","Active_Unknown","Active_Pass%" -Head $Style -Body "<Table width=100%><tr><td><h4>All Active Workstation Health Evaluation Status</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
     Out-String
+
+
 $HTML = $html + $htmlData 
 
 $WorkstationHealthEvaluationActive = $data.ActiveWorkstationHealthEvalutionCount.'Active_Pass%'
 $WorkstationHealthEvaluationInActive = 100 -$data.ActiveWorkstationHealthEvalutionCount.'Active_Pass%'
 
 $html = $html + @" 
-        <table>
+        <table width=100%>
         <tr>
           <td style="background-color:$(Set-PercentageColour -Value $WorkstationHealthEvaluationActive);color:#ffffff;" width="$($WorkstationHealthEvaluationActive)%"> $($WorkstationHealthEvaluationActive)% </td>
           <td style="background-color:#eeeeee;color:#333333;" width="$($WorkstationHealthEvaluationInActive)%"></td>
@@ -1370,60 +1475,106 @@ $html = $html + @"
 "@
 #endregion
 
+
+#######################################################################
+#region HTML All Active Client Policy Request Status
+#######################################################################
+
+# Convert results to HTML
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; All Active Workstation Client PolicyRequest Status</h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.ActiveWorkstationPolicyRequestCount |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties "TotalActive","ActivePolicyRequest","InActivePolicyRequest","ActivePolicyRequest%"
+
+$HTML = $html + $htmlData 
+
+$PolicyRequestWorkstationActive = $data.ActiveWorkstationPolicyRequestCount.'ActivePolicyRequest%'
+$PolicyRequestWorkstationInactive = 100 -$data.ActiveWorkstationPolicyRequestCount.'ActivePolicyRequest%'
+
+$html = $html + @" 
+        <table width=100%>
+        <tr>
+          <td style="background-color:$(Set-PercentageColour -Value $PolicyRequestWorkstationActive);color:#ffffff;" width="$($PolicyRequestWorkstationActive)%"> $($PolicyRequestWorkstationActive)% </td>
+          <td style="background-color:#eeeeee;color:#333333;" width="$($PolicyRequestWorkstationInactive)%"></td>
+        </tr>
+        </table>
+
+"@
+#endregion
+
+
+
 #######################################################################
 #region HTML All Clients diskspace
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ClientDiskspace   | 
-    ConvertTo-Html -Property "MAchine","Username","TotalSpace (GB)","Freespace (GB)" -Head $Style -Body "<Table><tr><td><h4>Clients with less than 20 gb C-drive</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Clients with less than 20 gb C-drive </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.ClientDiskSpace |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties Machine,Username,"TotalSpace (GB)","Freespace (GB)"
+
+
+
 $HTML = $html + $htmlData 
 
 #endregion
 
-#######################################################################
-# Applications and Packages section
-#######################################################################
-# Set html
-$html = $html + @"
-    <table width="930" border="1">
-    <tbody>
-        <tr>
-            <td>
-                <br>
-                <br>
-                <h4>Applications & Packages Deployments</h4>
-                <br>
-                <br>
-            </td>
-        </tr>
-    </tbody>
-    </table>
-"@
 #######################################################################
 #region HTML Application Deployment
 #######################################################################
 
 # Convert results to HTML
-$htmlData = $data.ApplicationDeployment   | 
-    ConvertTo-Html -Property "ApplicationName","AvailableTime","CollectionName","Purpose","Target","Success","Success%" -Head $Style -Body "<Table><tr><td><h4>Applications Deployed last 30 days</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
+
+                $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Applications Deployed last 30 days </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.ApplicationDeployment |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties ApplicationName,AvailableTime,CollectionName,Purpose,Target,Success,"Success%" 
+
+
 $HTML = $html + $htmlData 
 #endregion
 
 #######################################################################
-#region HTML Packge Deployment
+#region HTML Package Deployment
 #######################################################################
 
-if ($DATA.PackageDeployment)
-{
    # Convert results to HTML
-$htmlData = $data.PackageDeployment   | 
-    ConvertTo-Html -Property "ApplicationName","AvailableTime","CollectionName","Purpose","Target","Success","Success%" -Head $Style -Body "<Table><tr><td><h4>Package Deployed last 30 days</h4></td></tr></table>" -CssUri "http://www.w3schools.com/lib/w3.css" | 
-    Out-String
-$HTML = $html + $htmlData  
+
+if ($data.PackageDeployment)
+{
+                  $params = @{'As'='Table';
+                    'PreContent'="<h4>&diams; Package Deployed last 30 days </h4>";
+                    'EvenRowCssClass'='even';
+                    'OddRowCssClass'='odd';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';}
+
+        $htmlData = $data.PackageDeployment |
+                   ConvertTo-EnhancedHTMLFragment @params -Properties "ApplicationName","AvailableTime","CollectionName","Purpose","Target","Success","Success%"
+
+$HTML = $html + $htmlData    
 }
+
+
+
 
 
 
