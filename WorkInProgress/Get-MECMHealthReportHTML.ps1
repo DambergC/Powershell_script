@@ -20,14 +20,6 @@
 $script:dataSource = 'th-mgt02' # SQL Server name (and instance where applicable)
 $script:database = 'CM_PS1' # ConfigMgr Database name
 
-# Email params
-$EmailParams = @{
-  To         = 'christian.damberg@Cygate.se'
-  From       = 'MECMStatus@trivselhus.se'
-  Smtpserver = 'webmail.trivselhus.se'
-  Subject    = "ConfigMgr Client Health Summary  |  $(Get-Date -Format dd-MMM-yyyy)"
-}
-
 # Reporting thresholds (percentages)
 <#
     >= Good - reports as green in the progress bar
@@ -42,7 +34,7 @@ $Thresholds.Inventory.Good = 90
 $Thresholds.Inventory.Warning = 70
 
 # Siteconfiguration
-$sitecode = 'ps1'
+$sitecode = 'ps1:'
 $siteserver = 'TH-mgt02.korsberga.local'
 $StatusMessageTime = (Get-Date).AddDays(-2)
 # Number of Status messages to report
@@ -52,14 +44,47 @@ $TallyInterval = '0001128000100008'
 # Location of the resource dlls in the SCCM admin console path
 $script:SMSMSGSLocation = “$env:SMS_ADMIN_UI_PATH\00000409”
 
+
+# The no-reply emailaddress
+$Emailfrom = 'no-reply@trivselhus.se'
+#
+# The email (group) who will receive the report
+$email_Error = 'christian.damberg@trivselhus.se'
+$emailto = 'christian.damberg@trivselhus.se'
+#
+# The email when the script cant find any updates
+$email_noErrors = 'christian.damberg@trivselhus.se'
+#
+# SMTP-server
+$smtp = 'webmail.trivselhus.se'
+
 #endregion
 
 #######################################################################
 #region Functions
 #######################################################################
 
-    #Remove-Module EnhancedHTML2
-    Import-Module EnhancedHTML2
+# Check for ConfigMgr 
+if (-not(Get-Module -name ConfigurationManager)) {
+  Import-Module ($Env:SMS_ADMIN_UI_PATH.Substring(0,$Env:SMS_ADMIN_UI_PATH.Length-5) + '\ConfigurationManager.psd1')
+}
+
+# MAilkitMessage
+if (-not(Get-Module -name send-mailkitmessage)) {
+  Install-Module send-mailkitmessage
+  Import-Module send-mailkitmessage
+}
+
+# EnhancedHTML2
+if (-not(Get-Module -name EnhancedHTML2)) {
+  Install-Module -Name EnhancedHTML2
+  Import-Module EnhancedHTML2
+}
+#########################################################
+# To run the script you must be on ps-drive for MEMCM
+#########################################################
+Push-Location
+Set-Location $SiteCode
 
 # Function to run a sql query
 function Get-SQLData 
@@ -118,7 +143,6 @@ function Set-PercentageColour
 
   Return $Hex
 }
-
 function Get-StatusMessage {
     param (
         $MessageID,
@@ -176,7 +200,7 @@ function Get-StatusMessage {
 #######################################
 # Powershell - ADR Status
 #######################################
-$datainbox = Get-WmiObject -Class Win32_PerfFormattedData_SMSINBOXMONITOR_SMSInbox -ComputerName th-mgt02| Where-Object filecurrentcount -gt '0' | Select-Object -Property PSComputerName, Name, FileCurrentCount
+$datainbox = Get-WmiObject -Class Win32_PerfFormattedData_SMSINBOXMONITOR_SMSInbox -ComputerName $siteserver| Where-Object filecurrentcount -gt '0' | Select-Object -Property PSComputerName, Name, FileCurrentCount
 
 $dataevents = get-eventlog system -After (Get-Date).AddDays(-7) -EntryType Error  
 
@@ -214,7 +238,6 @@ From V_SummarizerSiteStatus SiteStatus Join v_Site SiteInfo on SiteStatus.SiteCo
 Order By SiteCode" 
 $data.Sitestatus = Get-SQLData -Query $query
 #endregion
-
 ###########################################
 #region QUERY - ADR Status
 ###########################################
@@ -271,7 +294,6 @@ Order by Status,ComponentName
 "
 $data.ComponentStatus = Get-SQLData -Query $Query
 #endregion
-
 ###########################################
 #region QUERY - Disk and SQL
 ###########################################
@@ -303,7 +325,6 @@ FROM v_SiteSystemSummarizer
 Order By 'Storage Object'"
 $Data.DiskSiteSQL = Get-SQLData -Query $Query
 #endregion
-
 ############################################
 #region QUERY - All Client Version
 ############################################ 
@@ -336,7 +357,6 @@ Order by sys.Client_version0 DESC
 "
 $Data.Clientversion = Get-SQLData -Query $Query
 #endregion
-
 ############################################
 #region QUERY - Client Health Thresholds
 ############################################
@@ -349,7 +369,6 @@ $Query = '
 
 $Data.CHSettings = Get-SQLData -Query $Query 
 #endregion
-
 ############################################
 #region QUERY - Client Installation failure
 ############################################
@@ -385,7 +404,6 @@ Select-Object -Property Count, 'Error Code', @{
 } |
 Sort-Object -Property Count -Descending
 #endregion
-
 ############################################
 #region QUERY - All DP Status
 ############################################
@@ -406,11 +424,11 @@ group by PSd.ServerNALPath,psd.SiteCode
 
 $Data.DPstatus = Get-SQLData -Query $Query
 #endregion
-
 ############################################
 #region QUERY - All Maintenance Task Status
 ############################################
 
+# All Maintenance Task
 $Query = "
  SELECT
 TaskName,
@@ -424,9 +442,25 @@ WHERE
 "
 
 $Data.MWStatus = Get-SQLData -Query $Query
+
+# Maintenance Task for Backup
+
+$query = "
+ SELECT
+TaskName,
+LastStartTime,
+LastCompletionTime,
+CASE WHEN CompletionStatus = '1' THEN 'Task failed' ELSE 'Task successful' END AS 'Status'
+FROM
+dbo.SQLTaskStatus
+WHERE
+(NOT (LastStartTime LIKE CONVERT(DATETIME, '1980-01-01 00:00:00', 102)))
+
+AND TaskName Like 'Backup%'
+"
+$data.BackupStatus = Get-SQLData -Query $query
+
 #endregion
-
-
 ############################################
 #region QUERY - All Policy Request
 ############################################ 
@@ -468,7 +502,6 @@ case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@A
 "
 $Data.ActiveWorkstationPolicyRequestCount = Get-SQLData -Query $Query 
 #endregion
-
 ###########################################
 #region QUERY - All Active Client Heartbeat (DDR) Status
 ###########################################
@@ -511,7 +544,46 @@ case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@A
 $Data.ActiveDDRWorkstationCount = Get-SQLData -Query $Query
 
 #endregion
+###########################################
+#region QUERY - All Active Client Hardware Inventory Status
+###########################################
+$Query = "
+ Declare @CollectionID as Varchar(8)
+Declare @TotalActive as Numeric(8)
+Declare @ActiveHWInv as Numeric(8)
+Declare @InActiveHWInv as Numeric(8)
+Set @CollectionID = 'SMS00001' --Specify the collection ID
+select @TotalActive = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (Ch.ClientActiveStatus = 1))
+)
+select @ActiveHWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveHW = 1 and ClientActiveStatus = 1))
+)
+select @InActiveHWInv = (
+select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
+and v_FullCollectionMembership.ResourceID in (
+Select Vrs.ResourceID from v_R_System Vrs
+inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
+where (IsActiveHW = 0 and ClientActiveStatus = 1))
+)
+select
+@TotalActive as 'TotalActive',
+@ActiveHWInv as 'ActiveHWInv',
+@InActiveHWInv as 'InActiveHWInv',
+case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveHWInv/ convert (float,@TotalActive)*100,2))
+End as 'ActiveHWInv%'
+"
+$Data.ActiveHardWareInventoryWorkstationCount = Get-SQLData -Query $Query
 
+#endregion
 ###########################################
 #region QUERY - All Active Client Hardware Inventory Status
 ###########################################
@@ -553,49 +625,6 @@ End as 'ActiveHWInv%'
 $Data.ActiveHardWareInventoryWorkstationCount = Get-SQLData -Query $Query
 
 #endregion
-
-###########################################
-#region QUERY - All Active Client Hardware Inventory Status
-###########################################
-
-$Query = "
- Declare @CollectionID as Varchar(8)
-Declare @TotalActive as Numeric(8)
-Declare @ActiveHWInv as Numeric(8)
-Declare @InActiveHWInv as Numeric(8)
-Set @CollectionID = 'SMS00001' --Specify the collection ID
-select @TotalActive = (
-select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
-and v_FullCollectionMembership.ResourceID in (
-Select Vrs.ResourceID from v_R_System Vrs
-inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
-where (Ch.ClientActiveStatus = 1))
-)
-select @ActiveHWInv = (
-select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
-and v_FullCollectionMembership.ResourceID in (
-Select Vrs.ResourceID from v_R_System Vrs
-inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
-where (IsActiveHW = 1 and ClientActiveStatus = 1))
-)
-select @InActiveHWInv = (
-select COUNT(*) as 'Count' from v_FullCollectionMembership where CollectionID = @CollectionID 
-and v_FullCollectionMembership.ResourceID in (
-Select Vrs.ResourceID from v_R_System Vrs
-inner join v_CH_ClientSummary Ch on Vrs.ResourceID = ch.ResourceID
-where (IsActiveHW = 0 and ClientActiveStatus = 1))
-)
-select
-@TotalActive as 'TotalActive',
-@ActiveHWInv as 'ActiveHWInv',
-@InActiveHWInv as 'InActiveHWInv',
-case when (@TotalActive = 0) or (@TotalActive is null) Then '100' Else (round(@ActiveHWInv/ convert (float,@TotalActive)*100,2))
-End as 'ActiveHWInv%'
-"
-$Data.ActiveHardWareInventoryWorkstationCount = Get-SQLData -Query $Query
-
-#endregion
-
 ###########################################
 #region QUERY - All Active Client Software Inventory Status
 ###########################################
@@ -637,7 +666,6 @@ End as 'ActiveSWInv%'
 $Data.ActiveSoftwareInventoryWorkstationCount = Get-SQLData -Query $Query
 
 #endregion
-
 ############################################
 #region QUERY - All With Client
 ############################################ 
@@ -685,7 +713,6 @@ convert (float,@TotalSystem)*100,2)) End as 'WithClient%'
 "
 $Data.WorkstationClientCount = Get-SQLData -Query $Query 
 #endregion
-
 ###########################################
 #region QUERY - All Active Clients Health Evaluation Status
 ###########################################
@@ -740,7 +767,6 @@ convert (float,@TotalActive)*100,2)) End as 'Active_Pass%'
 $Data.ActiveWorkstationHealthEvalutionCount = Get-SQLData -Query $Query
   
 #endregion
-
 ###########################################
 #region QUERY - All Active Clients Diskspace
 ###########################################
@@ -782,7 +808,6 @@ $Data.ClientDiskSpace = Get-SQLData -Query $Query
 ############################################
 #region QUERY - Application Deployment
 ############################################ 
-
 $Query = "
 Declare @CurrentDeploymentsReportNeededDays as integer
 Set @CurrentDeploymentsReportNeededDays = 30 --Specify the Days
@@ -819,7 +844,6 @@ $Data.ApplicationDeployment = Get-SQLData -Query $Query
 ############################################
 #region QUERY - Package Deployment
 ############################################ 
-
 $Query = "
 Declare @CurrentDeploymentsReportNeededDays as integer
 Set @CurrentDeploymentsReportNeededDays = 30 --Specify the Days
@@ -852,12 +876,11 @@ order by Ds.DeploymentTime desc
 $Data.PackageDeployment = Get-SQLData -Query $Query 
 
 #endregion
+
 #######################################################################
 #region Create html header
 #######################################################################
 # Html CSS style
-
-
 $style = @"
 <style>
 body {
@@ -927,22 +950,37 @@ th {
 </style>
 "@
 
-
-
-$html = @"
-<!DOCTYPE html>
-<html>
-
-<body>
-
-
-
-
+#########################################################
+# The top of the email
+#########################################################
+$pre = @"
+<br>
+<img src='cid:logo.png' height="50">
+<br>
+<p><b>New updates!</b><br> 
+<p>Updates will be available from wednesday week $weeknumber kl.15.00</p>
+<p><b>Schema</b><br>
+<p>The updates will be installed as follows:</p>
+<p><ol>Test - Week $weeknumber - Every night between 03.00 - 08:00 (If any updates are published)</ol></p>
+<p><ol>Prod - Week $nextweeknumber - Majority will be installed saturday 11.00pm till Sunday 09.00am</ol></p>
+<p><ol>AX - Managed manually by the administration.</ol></p>
+<p><b>Patchar From Microsoft</b><br>
+<p>The following updates are downloaded and published in updategroup <b><i>$UpdateGroupName</i></b> since $limit</p>
+<p>$Numbersofupdates</p>
 "@
 
+#########################################################
+# Footer of the email
+#########################################################
+$post = @"
+<p>Raport created $((Get-Date).ToString()) from <b><i>$($Env:Computername)</i></b></p>
+<p>Script created by:<br><a href="mailto:Your Email">Your name</a><br>
+<a href="https://your blog">your description of your blog</a>
+"@
+
+$html = $pre
+
 #endregion
-
-
 
 #######################################################################
 #region HTML Overall Site Status
@@ -984,7 +1022,42 @@ if ($data.Sitestatus.'Site Status' -eq 'Error')
 $HTML = $html + $htmlData 
 
 #endregion
+#######################################################################
+#region HTML Maintenance Task status
+#######################################################################
 
+# Convert results to HTML
+
+if ($data.BackupStatus.Status -eq 'TAsk Successful')
+{
+           $params = @{'As'='Table';
+                    'PreContent'='<h4>&diams; Backup Status</h4>';
+                    'EvenRowCssClass'='ok';
+                    'OddRowCssClass'='ok';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';} 
+}
+
+if ($data.BackupStatus.Status -eq 'Task Failed')
+{
+           $params = @{'As'='Table';
+                    'PreContent'='<h4>&diams; Backup Status</h4>';
+                    'EvenRowCssClass'='warning';
+                    'OddRowCssClass'='warning';
+                    'MakeTableDynamic'=$true;
+                    'TableCssClass'='grid';} 
+}
+
+        $htmlData = $data.Backupstatus| ConvertTo-EnhancedHTMLFragment @params -Properties TaskName,LastStartTime,LastCompletionTime,Status
+        
+
+$HTML = $html + $htmlData
+
+
+
+
+
+#endregion
 #######################################################################
 #region HTML All ADR Status
 #######################################################################
@@ -1005,11 +1078,9 @@ $HTML = $html + $htmlData
         $HTML = $html + $htmlData 
 
 #endregion
-
 #######################################################################
 #region HTML All ComponentStatus Siteserver
 #######################################################################
-
 
 If ($data.ComponentStatus)
 {
@@ -1161,29 +1232,6 @@ $HTML = $html + $htmlData
 }
 
 #endregion
-
-#######################################################################
-#region HTML Maintenance Task status
-#######################################################################
-
-# Convert results to HTML
-
-                $params = @{'As'='Table';
-                    'PreContent'="<h4>&diams; Maintenance Task Status </h4>";
-                    'EvenRowCssClass'='even';
-                    'OddRowCssClass'='odd';
-                    'MakeTableDynamic'=$true;
-                    'TableCssClass'='grid';}
-
-        $htmlData = $data.MWStatus |
-                   ConvertTo-EnhancedHTMLFragment @params -Properties TaskName,LastStartTime,LastCompletionTime,Status
-
-$HTML = $html + $htmlData 
-
-
-
-#endregion
-
 #######################################################################
 #region HTML All Disk Site SQL Siteserver
 #######################################################################
@@ -1204,7 +1252,6 @@ $HTML = $html + $htmlData
 $HTML = $html + $htmlData 
 
 #endregion
-
 #######################################################################
 #region HTML All Client Versions
 #######################################################################
@@ -1225,7 +1272,6 @@ $HTML = $html + $htmlData
     
 
 #endregion
-
 #######################################################################
 #region HTML Windows Client Installation Failures
 #######################################################################
@@ -1247,7 +1293,6 @@ $HTML = $html + $htmlData
 }
 
 #endregion
-
 #######################################################################
 #region HTML DP Status
 #######################################################################
@@ -1267,7 +1312,6 @@ $HTML = $html + $htmlData
 $HTML = $html + $htmlData 
 
 #endregion
-
 #######################################################################
 #region HTML Inbox Status
 #######################################################################
@@ -1287,7 +1331,6 @@ $HTML = $html + $htmlData
 $HTML = $html + $htmlData 
 
 #endregion
-
 #######################################################################
 #region HTML Events Status
 #######################################################################
@@ -1308,8 +1351,6 @@ $HTML = $html + $htmlData
 $HTML = $html + $htmlData 
 
 #endregion
-
-
 #######################################################################
 #region HTML All Client Status
 #######################################################################
@@ -1377,7 +1418,6 @@ $html = $html + @"
 
 
 #endregion
-
 #######################################################################
 #region HTML All Active Client Hardware Inventory Status
 #######################################################################
@@ -1410,7 +1450,6 @@ $html = $html + @"
 "@
 
 #endregion
-
 #######################################################################
 #region HTML All Active Client Software Inventory Status
 #######################################################################
@@ -1444,7 +1483,6 @@ $html = $html + @"
 "@
 
 #endregion
-
 #######################################################################
 #region HTML All Active Health Evaluation Status
 #######################################################################
@@ -1474,8 +1512,6 @@ $html = $html + @"
 
 "@
 #endregion
-
-
 #######################################################################
 #region HTML All Active Client Policy Request Status
 #######################################################################
@@ -1507,9 +1543,6 @@ $html = $html + @"
 
 "@
 #endregion
-
-
-
 #######################################################################
 #region HTML All Clients diskspace
 #######################################################################
@@ -1531,7 +1564,6 @@ $html = $html + @"
 $HTML = $html + $htmlData 
 
 #endregion
-
 #######################################################################
 #region HTML Application Deployment
 #######################################################################
@@ -1551,7 +1583,6 @@ $HTML = $html + $htmlData
 
 $HTML = $html + $htmlData 
 #endregion
-
 #######################################################################
 #region HTML Package Deployment
 #######################################################################
@@ -1579,21 +1610,80 @@ $HTML = $html + $htmlData
 
 
 #endregion
-
 #######################################################################
 #region Close html document...
 #######################################################################
-$html = $html + @"
-</body>
-</html>
-"@
+$html = $html + $post
 #endregion
+#########################################################
+# Mailsettings
+# using module Send-MailKitMessage
+#########################################################
 
-#######################################################################
-# Send email
-#######################################################################
+#use secure connection if available ([bool], optional)
+$UseSecureConnectionIfAvailable=$false
 
-#Send-MailMessage @EmailParams -Body $html -BodyAsHtml
+#authentication ([System.Management.Automation.PSCredential], optional)
+$Credential=[System.Management.Automation.PSCredential]::new("Username", (ConvertTo-SecureString -String "Password" -AsPlainText -Force))
+
+#SMTP server ([string], required)
+$SMTPServer=$smtp
+
+#port ([int], required)
+$Port=25
+
+#sender ([MimeKit.MailboxAddress] http://www.mimekit.net/docs/html/T_MimeKit_MailboxAddress.htm, required)
+$From=[MimeKit.MailboxAddress]$Emailfrom
+
+#recipient list ([MimeKit.InternetAddressList] http://www.mimekit.net/docs/html/T_MimeKit_InternetAddressList.htm, required)
+$RecipientList=[MimeKit.InternetAddressList]::new()
+$RecipientList.Add([MimeKit.InternetAddress]$EmailTo)
+
+
+#cc list ([MimeKit.InternetAddressList] http://www.mimekit.net/docs/html/T_MimeKit_InternetAddressList.htm, optional)
+#$CCList=[MimeKit.InternetAddressList]::new()
+#$CCList.Add([MimeKit.InternetAddress]$EmailToCC)
+
+
+
+#bcc list ([MimeKit.InternetAddressList] http://www.mimekit.net/docs/html/T_MimeKit_InternetAddressList.htm, optional)
+$BCCList=[MimeKit.InternetAddressList]::new()
+$BCCList.Add([MimeKit.InternetAddress]"BCCRecipient1EmailAddress")
+
+# Different subject depending on result of search for patches.
+
+#subject ([string], required)
+$Subject=[string]"Error Error - Action needed $(get-date)"    
+
+#text body ([string], optional)
+#$TextBody=[string]"TextBody"
+
+#HTML body ([string], optional)
+$HTMLBody=[string]$html
+
+#attachment list ([System.Collections.Generic.List[string]], optional)
+$AttachmentList=[System.Collections.Generic.List[string]]::new()
+$AttachmentList.Add("$PSScriptRoot\logo.png")
+
+# Mailparameters
+$Parameters=@{
+    "UseSecureConnectionIfAvailable"=$UseSecureConnectionIfAvailable    
+    #"Credential"=$Credential
+    "SMTPServer"=$SMTPServer
+    "Port"=$Port
+    "From"=$From
+    "RecipientList"=$RecipientList
+    #"CCList"=$CCList
+    #"BCCList"=$BCCList
+    "Subject"=$Subject
+    #"TextBody"=$TextBody
+    "HTMLBody"=$HTMLBody
+    "AttachmentList"=$AttachmentList
+}
+#########################################################
+#send email
+#########################################################
+Send-MailKitMessage @Parameters
 
 #######################################################################
 # Test, enable this row to generate html-page
