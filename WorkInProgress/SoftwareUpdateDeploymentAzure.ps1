@@ -3,7 +3,9 @@ Get-AzSubscription
 Set-AzContext -Subscription '454435d2-36c7-4e0e-831f-673a818cc445'
 
 
-Connect-AzAccount -TenantId bb63674f-acb1-488c-8cbe-4a83fb31f56a
+Connect-AzAccount -TenantId 'bb63674f-acb1-488c-8cbe-4a83fb31f56a'
+
+
 
 $subscriptionId = "454435d2-36c7-4e0e-831f-673a818cc445"
 $resourceGroupName = "Server-produktion"
@@ -12,6 +14,9 @@ $authHeaders = @{
      'Content-Type'  = 'application/json'
      'Authorization' = 'Bearer ' + (Get-AzAccessToken).Token
  }
+
+
+
 $result = Invoke-RestMethod -Uri https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Automation/automationAccounts/$automationAccountName/softwareUpdateConfigurations?api-version=2017-05-15-preview -Headers $authHeaders
 $result.value.id | ForEach-Object { Remove-AzResource -ResourceId $_ -Force }
 
@@ -23,12 +28,12 @@ $cfgs = $autoacc | Get-AzAutomationSoftwareUpdateConfiguration
 
 Foreach ($cfg in $cfgs) { $cfg | Remove-AzAutomationSoftwareUpdateConfiguration }
 
-
+Connect-AzAccount -Subscription '454435d2-36c7-4e0e-831f-673a818cc445'
 
 $tenantid = (Get-AzContext).Tenant.Id
-$subs = Get-AzSubscription | where {$_.TenantId -eq $tenantid}
+$subs = Get-AzSubscription | Where-Object {$_.TenantId -eq $tenantid}
 $scope = @()
-Foreach ($sub in $subs) { $scope += "/subscriptions/" + $sub.Id }
+Foreach ($sub in $subs) { $scope += "/subscriptions/" + $sub.Id } 
 $query =  $autoacc | New-AzAutomationUpdateManagementAzureQuery -Scope $scope
 
 
@@ -42,10 +47,12 @@ $days = 3
 
 while($month -le 12) {
   $day1 = [datetime]($month.ToString().PadLeft(2,'0') + "/01/" + $year.ToString() + " " + $time)
-  $patchtues = (0..30 | % {$day1.adddays($_) } | ? {$_.dayofweek -like "Tue*"})[1]
+  $patchtues = (0..30 | ForEach-Object {$day1.adddays($_) } | Where-Object {$_.dayofweek -like "Tue*"})[1]
   $winschname = $year.ToString() + "_" + $month.ToString().PadLeft(2,'0') + "_windows"
   $linschname = $year.ToString() + "_" + $month.ToString().PadLeft(2,'0') + "_linux"
   $schstart = $patchtues.AddDays($days)
+
+  
   #Adjust for BST because Azure portal doesn't handle it
   if ((Get-Date -Date $schstart).IsDaylightSavingTime()) { $schstart = $schstart.AddHours(1) }
   $winsch = $autoacc | New-AzAutomationSchedule -Name $winschname -StartTime $schstart -TimeZone "GMT Standard Time" -OneTime -ForUpdateConfiguration

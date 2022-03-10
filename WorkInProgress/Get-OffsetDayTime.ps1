@@ -40,7 +40,6 @@ PARAM(
 # region functions
 ############################################################
 
-
 # Set Patch Tuesday for a Month 
 Function Get-PatchTuesday ($Month,$Year)  
  { 
@@ -57,7 +56,6 @@ Function Get-PatchTuesday ($Month,$Year)
    Write-Output "Patch Tuesday this month is $PatchDay"
  }  
 Set-Location $PSScriptRoot
-
 # Function for append events to logfile located c:\windows\logs
 Function Write-Log
 {
@@ -75,16 +73,14 @@ Function Write-Log
 
 }
 
-# Function to create a folder in Scheduled Task
+$automationAccountName = Get-AzAutomationAccount -ResourceGroupName 'server-produktion' -Name 'UpdateManager'
+
+
 
 # Create Scheduled Task for for every month specified in variable Patchmonth
 foreach ($Monthnumber in $PatchMonth) 
 {
-    
-  
-
-
-    # Set Patch Tuesday for each Month 
+   # Set Patch Tuesday for each Month 
     $PatchDay = Get-PatchTuesday $Monthnumber $PatchYear
                  
     # Set month number correct to display name later in script (Months array starting from 0 hence the -1) 
@@ -93,8 +89,35 @@ foreach ($Monthnumber in $PatchMonth)
     # Set starttime for schedule task
     $StartTime=$PatchDay.AddDays($OffSetDays).AddHours($AddStartHour).AddMinutes($AddStartMinutes)
 
+#$cfgs = $autoacc | Get-AzAutomationSoftwareUpdateConfiguration
 
-    $StartTime
+#Foreach ($cfg in $cfgs) { $cfg | Remove-AzAutomationSoftwareUpdateConfiguration }
+
+#Connect-AzAccount -Subscription '454435d2-36c7-4e0e-831f-673a818cc445'
+
+$tenantid = (Get-AzContext).Tenant.Id
+$AzureSubscriptions = Get-AzSubscription | Where-Object {$_.TenantId -eq $tenantid}
+$scope = @()
+Foreach ($AzureSubscription in $AzureSubscriptions) { $scope += "/subscriptions/" + $AzureSubscription.Id } 
+$query =  $automationAccountName | New-AzAutomationUpdateManagementAzureQuery -Scope $scope
+
+
+
+  $day1 = [datetime]($month.ToString().PadLeft(2,'0') + "/01/" + $year.ToString() + " " + $time)
+  $patchtues = (0..30 | ForEach-Object {$day1.adddays($_) } | Where-Object {$_.dayofweek -like "Tue*"})[1]
+  $winschname = $year.ToString() + "_" + $month.ToString().PadLeft(2,'0') + "_windows"
+  $linschname = $year.ToString() + "_" + $month.ToString().PadLeft(2,'0') + "_linux"
+  $schstart = $patchtues.AddDays($days)
+
+  
+  #Adjust for BST because Azure portal doesn't handle it
+  if ((Get-Date -Date $schstart).IsDaylightSavingTime()) { $schstart = $schstart.AddHours(1) }
+  $winsch = $autoacc | New-AzAutomationSchedule -Name $winschname -StartTime $schstart -TimeZone "GMT Standard Time" -OneTime -ForUpdateConfiguration
+  $wincfg = $autoacc | New-AzAutomationSoftwareUpdateConfiguration -Windows -Schedule $winsch -AzureQuery $query -IncludedUpdateClassification Critical, Security -Duration $duration -RebootSetting IfRequired
+  $linsch = $autoacc | New-AzAutomationSchedule -Name $linschname -StartTime $schstart -TimeZone "GMT Standard Time" -OneTime -ForUpdateConfiguration
+  $lincfg = $autoacc | New-AzAutomationSoftwareUpdateConfiguration -Linux -Schedule $linsch -AzureQuery $query -IncludedPackageClassification Critical, Security -Duration $duration -RebootSetting IfRequired
+ 
+}
     
     ############################################################
     # This section must be edited before running the script
