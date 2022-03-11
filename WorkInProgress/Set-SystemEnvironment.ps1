@@ -1,4 +1,3 @@
-#requires -version 2
 <#
 .SYNOPSIS
   Add System Environment
@@ -25,6 +24,12 @@
 #Set Error Action to Silently Continue
 $ErrorActionPreference = "SilentlyContinue"
 
+Param(
+    [string]$domainname,
+    [string]$EnvironmentName
+)
+
+
 #----------------------------------------------------------[Declarations]----------------------------------------------------------
 
 #Script Version
@@ -36,10 +41,10 @@ $sLogName = "SystemEnvironment.log"
 $sLogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 
 #Script variables
-$domainname = 'sodra.com'
-$EnvironmentName = 'SodraOU'
+#$domainname = 'sodra.com'
+#$EnvironmentName = 'SodraOU'
 
-#-----------------------------------------------------------[Functions]------------------------------------------------------------
+#-----------------------------------------------------------[Functions & Params]------------------------------------------------------------
 
 Function Write-Log
 {
@@ -61,6 +66,7 @@ Function Write-Log
 
 
 
+Write-Log -Message 'Start Check'
 $strName = $env:COMPUTERNAME
 $strNamesearch = "$($strName)$"
 $strFilter = "(&(objectCategory=Computer)(samAccountName=$strNamesearch))"
@@ -74,8 +80,10 @@ $objDetails.RefreshCache("canonicalName")
 
 $EnvVarOU =  ($objDetails.canonicalname -replace "/$($strName)") -replace "$domainname/" 
 
+Write-Log -Message "$envvarOU"
+
 if ($EnvVarOU) 
 {
-    [System.Environment]::SetEnvironmentVariable("$EnvironmentName","$EnvVarOU",[System.EnvironmentVariableTarget]::Machine)
+   # [System.Environment]::SetEnvironmentVariable("$EnvironmentName","$EnvVarOU",[System.EnvironmentVariableTarget]::Machine)
 }
 
