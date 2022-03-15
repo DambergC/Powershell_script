@@ -11,7 +11,7 @@
 .NOTES
   Version:        1.0
   Author:         Christian Damberg
-  Creation Date:  10/3/2022
+  Creation Date:  15/3/2022
   Purpose/Change: Initial script development
   
 .EXAMPLE
@@ -82,5 +82,5 @@ Write-log -Level INFO "System Environment updated with $EnvVarOU and $Environmen
 
 if ($EnvVarOU) 
 {
-   # [System.Environment]::SetEnvironmentVariable("$EnvironmentName","$EnvVarOU",[System.EnvironmentVariableTarget]::Machine)
+   [System.Environment]::SetEnvironmentVariable("$EnvironmentName","$EnvVarOU",[System.EnvironmentVariableTarget]::Machine)
 }
