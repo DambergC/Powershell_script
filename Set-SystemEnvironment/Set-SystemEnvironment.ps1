@@ -15,7 +15,7 @@
   Purpose/Change: Initial script development
   
 .EXAMPLE
-  Set-SystemEnvironment.ps1 -DomainName viamonstra.com -EnvironmentName Production
+  Set-SystemEnvironment.ps1 -DomainName viamonstra.com -EnvironmentName ServerOU
 #>
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
