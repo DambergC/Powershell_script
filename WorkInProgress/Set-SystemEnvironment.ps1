@@ -3,10 +3,9 @@
   Add System Environment
 .DESCRIPTION
   Add System Environment to use with MEMCM Hardware Inventory to populate collection and distrbute application
-.PARAMETER <Parameter_Name>
-    <Brief description of parameter input required. Repeat this attribute if required>
-.INPUTS
-  None
+.PARAMETER
+  DomainName - The name of your domain to be excluded after search to create record to write as System Environment
+  EnvironmentName - What you want to name the variabel to be inventoried by MEMCM in Hardware Inventory
 .OUTPUTS
   Log file stored in C:\Windows\Logs\SystemEnvironment.log>
 .NOTES
@@ -16,16 +15,16 @@
   Purpose/Change: Initial script development
   
 .EXAMPLE
-  Set-SystemEnvironment.ps1
+  Set-SystemEnvironment.ps1 -DomainName viamonstra.com -EnvironmentName Production
 #>
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
 
 #Set Error Action to Silently Continue
-$ErrorActionPreference = "SilentlyContinue"
+#$ErrorActionPreference = "SilentlyContinue"
 
 Param(
-    [string]$domainname,
+    [string]$DomainName,
     [string]$EnvironmentName
 )
 
@@ -35,38 +34,37 @@ Param(
 #Script Version
 $sScriptVersion = "1.0"
 
-#Log File Info
-$sLogPath = "C:\Windows\Temp"
-$sLogName = "SystemEnvironment.log"
-$sLogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
-
-#Script variables
-#$domainname = 'sodra.com'
-#$EnvironmentName = 'SodraOU'
-
 #-----------------------------------------------------------[Functions & Params]------------------------------------------------------------
 
-Function Write-Log
-{
-    PARAM(
-    [String]$Message,
-    [int]$Severity,
-    [string]$Component
-    )
-    Set-Location $PSScriptRoot
-    $Logpath = "C:\Windows\Logs"
-    $TimeZoneBias = Get-CimInstance win32_timezone
-    $Date= Get-Date -Format "HH:mm:ss.fff"
-    $Date2= Get-Date -Format "MM-dd-yyyy"
-        "<![LOG[$Message]LOG]!><time=$([char]34)$Date$($TimeZoneBias.bias)$([char]34) date=$([char]34)$date2$([char]34) component=$([char]34)$Component$([char]34) context=$([char]34)$([char]34) type=$([char]34)$Severity$([char]34) thread=$([char]34)$([char]34) file=$([char]34)$([char]34)>"| Out-File -FilePath "$Logpath\$sLogName" -Append -NoClobber -Encoding default
+# Static params
+$logfolder = "c:\windows\logs\"
+$logfile = "$logfolder\Set-SystemEnvironment.log"
 
-}
+
+
+# Function to write to logfile
+Function Write-Log {
+  [CmdletBinding()]
+  Param(
+  [Parameter(Mandatory=$False)]
+  [ValidateSet("INFO","WARN","ERROR","FATAL","DEBUG")]
+  [String]
+  $Level = "INFO",
+
+  [Parameter(Mandatory=$True)]
+  [string]
+  $Message
+  )
+
+  $Stamp = (Get-Date).toString("yyyy/MM/dd HH:mm:ss")
+  $Line = "$Stamp $Level $Message"
+  Add-Content $logfile -Value $Line
+  }
 
 #-----------------------------------------------------------[Execution]------------------------------------------------------------
 
 
-
-Write-Log -Message 'Start Check'
+Write-log -Level INFO -Message 'Starting query about OU path' 
 $strName = $env:COMPUTERNAME
 $strNamesearch = "$($strName)$"
 $strFilter = "(&(objectCategory=Computer)(samAccountName=$strNamesearch))"
@@ -80,10 +78,9 @@ $objDetails.RefreshCache("canonicalName")
 
 $EnvVarOU =  ($objDetails.canonicalname -replace "/$($strName)") -replace "$domainname/" 
 
-Write-Log -Message "$envvarOU"
+Write-log -Level INFO "System Environment updated with $EnvVarOU and $EnvironmentName"
 
 if ($EnvVarOU) 
 {
    # [System.Environment]::SetEnvironmentVariable("$EnvironmentName","$EnvVarOU",[System.EnvironmentVariableTarget]::Machine)
 }
-
