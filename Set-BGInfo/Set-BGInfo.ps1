@@ -13,6 +13,10 @@
    Set-BGInfo.ps1 -FirstRun
    First run of the script on the server to verify that EventSource in Application Log exist and to add path to Registry Run
 
+.EXAMPLE
+   Set-BGInfo.ps1 -Reset
+   Removes registry run value if BGinfo is removed or BGinfo folder is moved.
+
 .NOTES
    Filename: Set-BGInfo.ps1
    Author: Christian Damberg
@@ -38,7 +42,9 @@
 
     Param(
     [Parameter(Mandatory=$false)]
-    [Switch]$Firstrun
+    [Switch]$Firstrun,
+    [Parameter(Mandatory=$false)]
+    [Switch]$Reset
     )
 
     #------------------------------------------------#
@@ -71,6 +77,7 @@
     [String]$OUNameTest = 'Test'
     [String]$OUNameTier = 'Tier'
     [String]$eventlogsource = 'BGinfo'
+    [string]$registrypath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
     
     #------------------------------------------------#
     # Firstrun check 
@@ -90,7 +97,6 @@
             }
 
         #Registry run check for BGinfo run
-        $registrypath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
         $RegistryRunVaule = Get-ItemProperty -Path $registrypath -Name BGinfo -ErrorAction SilentlyContinue 
 
         if ($RegistryRunVaule -eq $null)
@@ -105,6 +111,14 @@
                 Write-host "Registry for run exist" -ForegroundColor green
             }
 
+    }
+
+    if($reset -eq $true)
+
+    {
+        Remove-ItemProperty -Path $registrypath -Name BGINFO -ErrorAction SilentlyContinue
+        write-host 'Settings in Registry deleted' -ForegroundColor Red
+        exit
     }
 
     #------------------------------------------------#
