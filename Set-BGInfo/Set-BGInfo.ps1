@@ -91,17 +91,18 @@
 
         #Registry run check for BGinfo run
         $registrypath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
-        $RegistryRunVaule = Get-ItemPropertyValue -Path $registrypath -Name BGinfo
+        $RegistryRunVaule = Get-ItemProperty -Path $registrypath -Name BGinfo -ErrorAction SilentlyContinue 
 
         if ($RegistryRunVaule -eq $null)
             {
                 write-host "RegistryRun missing value, adding it to Registry" -ForegroundColor Green
+                New-ItemProperty -Path $registrypath -Name BGInfo -PropertyType string -Value "powershell.exe -executionpolicy unrestricted -file $PSScriptRoot\Set-BGinfo.ps1" 
 
             }
 
         else
             {
-                Write-host "$RegistryRunVaule" -ForegroundColor Yellow
+                Write-host "Registry for run exist" -ForegroundColor green
             }
 
     }
