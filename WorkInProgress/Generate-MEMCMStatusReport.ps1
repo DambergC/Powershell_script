@@ -71,8 +71,8 @@ if (-not(Get-Module -name ConfigurationManager)) {
 
 # MAilkitMessage
 if (-not(Get-Module -name send-mailkitmessage)) {
-  Install-Module send-mailkitmessage -Verbose
-  Import-Module send-mailkitmessage -Verbose
+  Install-Module send-mailkitmessage -Verbose -Force
+  Import-Module send-mailkitmessage -Verbose -Force
 }
 
 # EnhancedHTML2
@@ -162,7 +162,7 @@ function Set-PercentageColour
 #######################################
 $datainbox = Get-WmiObject -Class Win32_PerfFormattedData_SMSINBOXMONITOR_SMSInbox -ComputerName $siteserver| Where-Object filecurrentcount -gt '0' | Select-Object -Property PSComputerName, Name, FileCurrentCount
 
-$dataevents = get-eventlog system -After (Get-Date).AddDays(-7) -EntryType Error  
+$dataevents = get-eventlog system -After (Get-Date).AddDays(-7) -EntryType Error | Where-Object instanceid -ne '10028'
 
 #endregion
 
@@ -1175,7 +1175,7 @@ if ($data.InstallFailures)
                     'TableCssClass'='grid';}
 
         $html_EventStatus = $dataevents |
-                   ConvertTo-EnhancedHTMLFragment @params -Properties EntryType,Source,Message
+                   ConvertTo-EnhancedHTMLFragment @params -Properties EntryType,Source,InstanceID,Message
 
 
 
@@ -1512,9 +1512,10 @@ $Parameters=@{
 #########################################################
 #send email
 #########################################################
-send-MailKitMessage @Parameters
+#send-MailKitMessage @Parameters
 
 #######################################################################
 # Test, enable this row to generate html-page
 #######################################################################
 
+$html | Out-File -FilePath C:\Temp\test2.html
