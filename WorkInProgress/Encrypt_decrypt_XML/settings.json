@@ -1,0 +1,10 @@
+{
+  "elementsToEncrypt": [
+    "Password",
+    "ConnectionString",
+    "PeopleStageConnectionString"
+  ],
+  "keySize": 256,
+  "keyName": "rsaKey",
+  "keyContainerName": "XML_ENC_RSA_KEY"
+}

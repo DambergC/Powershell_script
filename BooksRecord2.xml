@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Configuration>
+  <CustomerBigram>BIGRAM</CustomerBigram>
+  <InstansUser>ViwInstall213123</InstansUser>
+  <EncryptedData Id="InstansPassword" Type="http://www.w3.org/2001/04/xmlenc#Element" xmlns="http://www.w3.org/2001/04/xmlenc#">
+    <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" />
+    <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <EncryptedKey xmlns="http://www.w3.org/2001/04/xmlenc#">
+        <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-1_5" />
+        <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+          <KeyName>rsaKey</KeyName>
+        </KeyInfo>
+        <CipherData>
+          <CipherValue>PnqIMluvjCeqsdnr74vQQHiLqpOmUVxBVvw3Ute43nqLpMe6tyGHQubqww/KGbny3Svj/jUh0A68bPksfYwVSOCHul/bCEU9vvjwagZs0vPem6jqTTPY/8UPfwecMp16hZpGVjAJP+Ng7IgUPppeexrENgnh5wSAMRq7dW5Qirw=</CipherValue>
+        </CipherData>
+        <ReferenceList>
+          <DataReference URI="#InstansPassword" />
+        </ReferenceList>
+      </EncryptedKey>
+    </KeyInfo>
+    <CipherData>
+      <CipherValue>0t/QCR8pFd1GDfVDX8twNXCy0Qzbvxy5f3AawWLugrVu3l7YlsBraFzXsqy/29krkg5aLfDgfgWAHF5qB8VZsQ==</CipherValue>
+    </CipherData>
+  </EncryptedData>
+</Configuration>

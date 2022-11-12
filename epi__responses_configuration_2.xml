@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<EmailResponseGathererConfiguration xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EncryptedData Id="ConnectionString" Type="http://www.w3.org/2001/04/xmlenc#Element" xmlns="http://www.w3.org/2001/04/xmlenc#">
+    <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" />
+    <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <EncryptedKey xmlns="http://www.w3.org/2001/04/xmlenc#">
+        <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-1_5" />
+        <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+          <KeyName>rsaKey</KeyName>
+        </KeyInfo>
+        <CipherData>
+          <CipherValue>c4PN5qsNy1yE6Se775KOxq2yR8ZMUeshxwKiv+4FAgJNvSigoV4OWa+HTraf2JFEZFT+XLfMyphILucPse6WwzMj9NrTEqFLrYTNUyJ4WnTHKUj49MMuWBKv8s/Pe711jHsTCSk3H1nY0TI2QpQnz1C9PnINyIpg0pkCMUHJF6o=</CipherValue>
+        </CipherData>
+        <ReferenceList>
+          <DataReference URI="#ConnectionString" />
+        </ReferenceList>
+      </EncryptedKey>
+    </KeyInfo>
+    <CipherData>
+      <CipherValue>0DwH+eI3fRCjDj7jbs0/358kgTqGMTW9aPYsW5S61TyrVER/GMZ4jiajLk6quWhI/Z1PzBnlGhOKT3o2WeF5GrsWrjMimhyB/BtwDSLCOE98eJyGvmVAwf8Qp/8sjmZr31WkEuT6bmujpczDT4Zx9oB01iCwLAhnP9dIFV/SEEYfjKYWCEM9lTvtl6y5j1Bv</CipherValue>
+    </CipherData>
+  </EncryptedData>
+  <EncryptedData Id="PeopleStageConnectionString" Type="http://www.w3.org/2001/04/xmlenc#Element" xmlns="http://www.w3.org/2001/04/xmlenc#">
+    <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" />
+    <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <EncryptedKey xmlns="http://www.w3.org/2001/04/xmlenc#">
+        <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-1_5" />
+        <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+          <KeyName>rsaKey</KeyName>
+        </KeyInfo>
+        <CipherData>
+          <CipherValue>Wld0KOQeHZn4h6jQQzfrrM0/QniQPRkCzQGCx+RKUBWsYNWsL1CjoRBCkoOEoR0WLknnPaTCBQsanAxttagSuzgYjI//oEnjJdwl6ATTX/2VT+x7PTiFeeOgcYJmBExNfLWSnv/s/k6I27PtMQ39BSQVJjpxLsUbhy/EG/foICM=</CipherValue>
+        </CipherData>
+        <ReferenceList>
+          <DataReference URI="#PeopleStageConnectionString" />
+        </ReferenceList>
+      </EncryptedKey>
+    </KeyInfo>
+    <CipherData>
+      <CipherValue>0DwH+eI3fRCjDj7jbs0/3woGDBMKEeZ97JIjTk0ZyxbZ1JZNRYzQf+Mr1S40bgKFb+ccz4U3ysa8piJNqLWOALoUgkuYnJRhp5wA28evJv3md8HeuOdDhNInBKSo7p2/fvONH+UejX5Wh3I2/E8hVH8ISS0LabFnVts4dRLe+vqtnbGY9vNJTozOdYZNSxR0y6qnPrye/Knans+Aw+JlJw==</CipherValue>
+    </CipherData>
+  </EncryptedData>
+  <ConnectionTimeout>3000</ConnectionTimeout>
+  <BulkInsertDirectory>\\apteco\test</BulkInsertDirectory>
+  <BroadcasterName>Optivo</BroadcasterName>
+  <Username>abc@example.com</Username>
+  <EncryptedData Id="Password" Type="http://www.w3.org/2001/04/xmlenc#Element" xmlns="http://www.w3.org/2001/04/xmlenc#">
+    <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc" />
+    <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <EncryptedKey xmlns="http://www.w3.org/2001/04/xmlenc#">
+        <EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-1_5" />
+        <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+          <KeyName>rsaKey</KeyName>
+        </KeyInfo>
+        <CipherData>
+          <CipherValue>Yqs878ZACzRrHuBoIsdx0dnmTyP7dPXjUIfcEr6ErvKJPqerVeDqhTvJqLD3ubdRX7iYQBLGtC7o4GzY5pv+LJqWhJFEcLtlZhKeMTL0DDwOv68ItAFVh4YgKN/sYkapt6VWMavaT8Aj5Xd/0HL5GxhtQUWEmdzu+Diax+AUbJA=</CipherValue>
+        </CipherData>
+        <ReferenceList>
+          <DataReference URI="#Password" />
+        </ReferenceList>
+      </EncryptedKey>
+    </KeyInfo>
+    <CipherData>
+      <CipherValue>0DwH+eI3fRCjDj7jbs0/33Z+MG7Gh08Y+8mEja//qvW64jtyww3dgte6tfVmmrNa</CipherValue>
+    </CipherData>
+  </EncryptedData>
+  <SendEmailOnError>True</SendEmailOnError>
+  <Parameters>
+    <Parameter>
+      <Key>MESSAGEPERIOD</Key>
+      <Value>7D</Value>
+    </Parameter>
+    <Parameter>
+      <Key>CLICK.URN</Key>
+      <Value>1</Value>
+    </Parameter>
+    <Parameter>
+      <Key>CLIENTID</Key>
+      <Value>1234567890</Value>
+    </Parameter>
+    <Parameter>
+      <Key>CLICK.MAILINGID</Key>
+      <Value>0</Value>
+    </Parameter>
+    <Parameter>
+      <Key>CLICK.LINKID</Key>
+      <Value>2</Value>
+    </Parameter>
+    <Parameter>
+      <Key>CLICK.CREATED</Key>
+      <Value>3</Value>
+    </Parameter>
+    <Parameter>
+      <Key>CLICK.COMMUNICATIONKEY</Key>
+      <Value>4</Value>
+    </Parameter>
+    <Parameter>
+      <Key>CLICK.EMAIL</Key>
+      <Value>5</Value>
+    </Parameter>
+    <Parameter>
+      <Key>LINK.MAILINGID</Key>
+      <Value>0</Value>
+    </Parameter>
+    <Parameter>
+      <Key>LINK.CREATED</Key>
+      <Value>4</Value>
+    </Parameter>
+    <Parameter>
+      <Key>LINK.ID</Key>
+      <Value>1</Value>
+    </Parameter>
+    <Parameter>
+      <Key>LINK.NAME</Key>
+      <Value>2</Value>
+    </Parameter>
+    <Parameter>
+      <Key>LINK.URL</Key>
+      <Value>3</Value>
+    </Parameter>
+    <Parameter>
+      <Key>SEND.MAILINGID</Key>
+      <Value>0</Value>
+    </Parameter>
+    <Parameter>
+      <Key>SEND.URN</Key>
+      <Value>1</Value>
+    </Parameter>
+    <Parameter>
+      <Key>SEND.CREATED</Key>
+      <Value>2</Value>
+    </Parameter>
+    <Parameter>
+      <Key>SEND.COMMUNICATIONKEY</Key>
+      <Value>3</Value>
+    </Parameter>
+    <Parameter>
+      <Key>SEND.EMAIL</Key>
+      <Value>4</Value>
+    </Parameter>
+    <Parameter>
+      <Key>MAILING.ID</Key>
+      <Value>0</Value>
+    </Parameter>
+    <Parameter>
+      <Key>MAILING.STARTED</Key>
+      <Value>2</Value>
+    </Parameter>
+    <Parameter>
+      <Key>MAILING.CREATED</Key>
+      <Value>4</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPEN.MAILINGID</Key>
+      <Value>0</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPEN.URN</Key>
+      <Value>1</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPEN.CREATED</Key>
+      <Value>2</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPEN.COMMUNICATIONKEY</Key>
+      <Value>3</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPEN.EMAIL</Key>
+      <Value>4</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPTOUT.MAILINGID</Key>
+      <Value>0</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPTOUT.URN</Key>
+      <Value>1</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPTOUT.CREATED</Key>
+      <Value>2</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPTOUT.COMMUNICATIONKEY</Key>
+      <Value>3</Value>
+    </Parameter>
+    <Parameter>
+      <Key>OPTOUT.EMAIL</Key>
+      <Value>4</Value>
+    </Parameter>
+    <Parameter>
+      <Key>RESPONSE.CATEGORY</Key>
+      <Value>OPEN,CLICK,BOUNCE,OPTIN,OPTOUT,SEND</Value>
+    </Parameter>
+    <Parameter>
+      <Key>ONLYPROCESSRECORDSWITHBROADCASTID</Key>
+      <Value>true</Value>
+    </Parameter>
+    <Parameter>
+      <Key>RESPONSE.COMMUNICATIONKEY</Key>
+      <Value>5</Value>
+    </Parameter>
+    <Parameter>
+      <Key>RESPONSE.CREATED</Key>
+      <Value>4</Value>
+    </Parameter>
+    <Parameter>
+      <Key>RESPONSE.EMAIL</Key>
+      <Value>6</Value>
+    </Parameter>
+    <Parameter>
+      <Key>RESPONSE.MAILINGID</Key>
+      <Value>0</Value>
+    </Parameter>
+    <Parameter>
+      <Key>RESPONSE.URN</Key>
+      <Value>2</Value>
+    </Parameter>
+    <Parameter>
+      <Key>SEND.CATEGORY</Key>
+      <Value>6</Value>
+    </Parameter>
+    <Parameter>
+      <Key>SessionUrl</Key>
+      <Value>https://api.campaign.episerver.net/soap11/Session</Value>
+    </Parameter>
+    <Parameter>
+      <Key>MailingUrl</Key>
+      <Value>https://api.campaign.episerver.net/soap11/Mailing</Value>
+    </Parameter>
+    <Parameter>
+      <Key>ClosedLoopUrl</Key>
+      <Value>https://api.campaign.episerver.net/soap11/ClosedLoop</Value>
+    </Parameter>
+    <Parameter>
+      <Key>RemoveFiles</Key>
+      <Value>False</Value>
+    </Parameter>
+  </Parameters>
+  <SmtpSettings>
+    <Port>25</Port>
+    <Server>smtpserver</Server>
+    <SSL>False</SSL>
+    <Username />
+    <Password />
+    <From>test@example.com</From>
+    <To>info@example.com</To>
+  </SmtpSettings>
+</EmailResponseGathererConfiguration>
