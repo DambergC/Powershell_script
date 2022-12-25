@@ -16,9 +16,16 @@
 #######################################################################
 #region Parameters
 #######################################################################
+
+$absPath = Join-Path $PSScriptRoot "/Config.XML"
+
+[xml]$config = Get-Content -Path $absPath
+
+$finalpath = $config.Settings.Html.Savepath
+
 # Database info
-$script:dataSource = 'vax-vs051' # SQL Server name (and instance where applicable)
-$script:database = 'CM_sod' # ConfigMgr Database name
+$script:dataSource = $config.Settings.SQLserver.Name # SQL Server name (and instance where applicable)
+$script:database = $config.Settings.SQLserver.Database # ConfigMgr Database name
 
 # Reporting thresholds (percentages)
 <#
@@ -34,8 +41,8 @@ $Thresholds.Inventory.Good = 90
 $Thresholds.Inventory.Warning = 70
 
 # Siteconfiguration
-$sitecode = 'sod:'
-$siteserver = 'vax-vs051.sodra.com'
+$sitecode = $config.Settings.SiteServer.SiteCode
+$siteserver = $config.Settings.SiteServer.Name
 $StatusMessageTime = (Get-Date).AddDays(-2)
 # Number of Status messages to report
 $SMCount = 5
@@ -335,7 +342,7 @@ $params = @{'As'='Table';
 'PreContent'='<h4>Automatic Deployment Rules</h4>';
 'EvenRowCssClass'='even';
 'OddRowCssClass'='odd';
-'MakeTableDynamic'=$true;
+'MakeTableDynamic'=$false;
 'TableCssClass'='grid';}
 
 $html_ADR_Status = $data.ADRStatus |
@@ -348,9 +355,10 @@ ConvertTo-EnhancedHTMLFragment @params -Properties name,Status,AutodeploymentEna
 #######################################################################
 
 $params = @{'CssStyleSheet'=$style;
-'Title'="Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver";
-'PreContent'="<h1>Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver</h1>";
-'HTMLFragments'=@($HTMLTop,$HTMLhead,$html_ADR_Status,$HTMLpost)}
+#'Title'="Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver";
+#'PreContent'="<h1>Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver</h1>";
+#'HTMLFragments'=@($HTMLTop,$HTMLhead,$html_ADR_Status,$HTMLpost)}
+'HTMLFragments'=@($html_ADR_Status)}
 #ConvertTo-EnhancedHTML @params | Out-File -FilePath C:\Temp\test2.html
 $html = ConvertTo-EnhancedHTML @params
 #endregion
@@ -428,4 +436,4 @@ $Parameters=@{
 # Test, enable this row to generate html-page
 #######################################################################
 
-$html | Out-File -FilePath C:\Temp\ADRStatus.html
+$html | Out-File -FilePath $finalpath\ADRStatus.html

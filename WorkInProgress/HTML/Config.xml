@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Settings>
+    <SiteServer>
+    <!--Name and sitecode-->
+        <Name>cm01</Name>
+        <SiteCode>ps1:</SiteCode>
+    </SiteServer>
+    <SQLserver>
+    <!--Name and sitecode-->
+        <Name>cm01</Name>
+        <Database>cm_ps1</Database>
+    </SQLserver>
+    <Html>
+        <Savepath>C:\inetpub\wwwroot\CygateDashboard</Savepath>
+    </Html>
+</Settings>    

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Settings>
+    <SiteStatus>
+        <Query>Select
+SiteStatus.SiteCode, SiteInfo.SiteName, SiteStatus.Updated 'Time Stamp',
+Case SiteStatus.Status
+When 0 Then 'OK'
+When 1 Then 'Warning'
+When 2 Then 'Critical'
+Else ' '
+End AS 'Site Status',
+Case SiteInfo.Status
+When 1 Then 'Active'
+When 2 Then 'Pending'
+When 3 Then 'Failed'
+When 4 Then 'Deleted'
+When 5 Then 'Upgrade'
+Else ' '
+END AS 'Site State'
+From V_SummarizerSiteStatus SiteStatus Join v_Site SiteInfo on SiteStatus.SiteCode = SiteInfo.SiteCode
+Order By SiteCode</Query>
+    </SiteStatus>
+    <SQLDiskStatus>
+        <Query>SELECT distinct
+Case v_SiteSystemSummarizer.Status
+When 0 Then 'OK'
+When 1 Then 'Warning'
+When 2 Then 'Critical'
+Else ' '
+End As 'Status',
+SiteCode 'Site Code',
+SUBSTRING(SiteSystem, CHARINDEX('\\', SiteSystem) + 2, CHARINDEX(']', SiteSystem) - CHARINDEX('\\', SiteSystem) - 3 ) AS 'Site System',REPLACE(Role, 'SMS', 'ConfigMgr') 'Role',
+SUBSTRING(SiteObject, CHARINDEX('Display=', SiteObject) + 8, CHARINDEX(']', SiteObject) - CHARINDEX('Display=',SiteObject) - 9) AS 'Storage Object',
+Case ObjectType
+When 0 Then 'Directory'
+When 1 Then 'SQL Database'
+When 2 Then 'SQL Transaction Log'
+Else ' '
+END AS 'Object Type',
+CAST(BytesTotal/1024 AS VARCHAR(49)) + 'MB' 'Total',
+CAST(BytesFree/1024 AS VARCHAR(49)) + 'MB' 'Free',
+CASE PercentFree
+When -1 Then 'Unknown'
+When -2 Then 'Automatically grow'
+ELSE CAST(PercentFree AS VARCHAR(49)) + '%'
+END AS '%Free'
+FROM v_SiteSystemSummarizer
+Order By 'Storage Object'</Query>
+    </SQLDiskStatus>
+    <MaintanceTaskStatus>
+        <Query>SELECT TaskName,
+LastStartTime,
+LastCompletionTime,
+CASE WHEN CompletionStatus = '1' THEN 'Task failed' ELSE 'Task successful' END AS 'Status'
+FROM
+dbo.SQLTaskStatus
+WHERE
+(NOT (LastStartTime LIKE CONVERT(DATETIME, '1980-01-01 00:00:00', 102)))</Query>
+    </MaintanceTaskStatus>
+    <ADRStatus>
+        <Query>SELECT
+Name, 
+AutodeploymentEnabled, 
+lastruntime, 
+LastErrorcode,
+CASE when lasterrorcode > '0' THEN 'Error' ELSE 'TASK Successful' END AS 'LastRun',
+
+CASE when AutodeploymentEnabled = '1' Then 'Enabled' Else 'Disabled' END AS 'Status'
+FROM vSMS_AutoDeployments
+order by Name</Query>
+    </ADRStatus>        
+</Settings>    

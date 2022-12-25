@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<style><style>
+/* Remove space around the email design. */
+html,
+body {
+    margin: 0 auto !important;
+    padding: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+/* Stop Outlook resizing small text. */
+* {
+    -ms-text-size-adjust: 100%;
+}
+
+/* Stop Outlook from adding extra spacing to tables. */
+table,
+td {
+    mso-table-lspace: 0pt !important;
+    mso-table-rspace: 0pt !important;
+}
+
+/* Use a better rendering method when resizing images in Outlook IE. */
+img {
+    -ms-interpolation-mode:bicubic;
+}
+
+/* Prevent Windows 10 Mail from underlining links. Styles for underlined links should be inline. */
+a {
+    text-decoration: none;
+}
+
+body {
+  
+    color:#333333;
+    font-family:Calibri,Tahoma;
+    font-size: 10pt;
+    !important; mso-line-height-rule: exactly;
+}
+
+h1 {
+    text-align:Left;
+}
+
+h2 {
+    border-top:1px solid #666666;
+}
+h4 {
+    border-top:1px solid #666666;
+}
+
+th {
+    font-weight:bold;
+    color:#eeeeee;
+    background-color:#333333;
+    cursor:pointer;
+}
+
+.odd  { background-color:#9bddff; }
+
+.even { background-color:#fffacd; }
+
+.ok { background-color:lightgreen; }
+
+.warning { background-color:lightyellow; }
+
+.error { background-color:lightred; }
+
+.paginate_enabled_next, .paginate_enabled_previous {
+    cursor:pointer; 
+    border:1px solid #222222; 
+    background-color:#dddddd; 
+    padding:2px; 
+    margin:4px;
+    border-radius:2px;
+}
+
+.paginate_disabled_previous, .paginate_disabled_next {
+    color:#666666; 
+    cursor:pointer;
+    background-color:#dddddd; 
+    padding:2px; 
+    margin:4px;
+    border-radius:2px;
+}
+
+.dataTables_info { margin-bottom:4px; }
+
+.sectionheader { cursor:pointer; }
+
+.sectionheader:hover { color:red; }
+
+.grid { width:600px }
+
+.enhancedhtml-dynamic-table { width:600px }
+
+.red {
+    color:red;
+    font-weight:bold;
+} 
+</style></style>
+
+
+<script charset="utf8" type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.2.min.js"></script>
+<script charset="utf8" type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.3/jquery.dataTables.min.js"></script>
+<script type="text/javascript">$(document).ready(function () {$('.enhancedhtml-dynamic-table').dataTable();} );</script>
+</head><body>
+<h4>Disk & SQL status </h4><div ><table class="enhancedhtml-dynamic-table grid"><thead><tr><th>status</th><th>site system</th><th>Object Type</th><th>Total</th><th>Free</th><th>%Free</th></tr></thead><tbody><tr class="even"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>99999MB</td><td>36162MB</td><td>36%</td></tr><tr class="odd"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>40941MB</td><td>40853MB</td><td>99%</td></tr><tr class="even"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>206070MB</td><td>167298MB</td><td>81%</td></tr><tr class="odd"><td>OK</td><td>CM01.CORP.VIAMONSTRA.COM\</td><td>Directory</td><td>206070MB</td><td>167298MB</td><td>81%</td></tr><tr class="even"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>206070MB</td><td>167298MB</td><td>81%</td></tr><tr class="odd"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>206070MB</td><td>167298MB</td><td>81%</td></tr><tr class="even"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>206070MB</td><td>167297MB</td><td>81%</td></tr><tr class="odd"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>206070MB</td><td>167298MB</td><td>81%</td></tr><tr class="even"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>Directory</td><td>206070MB</td><td>167298MB</td><td>81%</td></tr><tr class="odd"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>SQL Database</td><td>5120MB</td><td>2377MB</td><td>Automatically grow</td></tr><tr class="even"><td>OK</td><td>CM01.corp.viamonstra.com\</td><td>SQL Transaction Log</td><td>839MB</td><td>829MB</td><td>Automatically grow</td></tr></tbody></table></div>
+
+<table>
+</table>
+</body></html>

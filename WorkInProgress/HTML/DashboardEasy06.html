@@ -1,0 +1,357 @@
+<!-- saved from url=(0014)about:internet -->
+ <!DOCTYPE html>
+ <html><head><meta content="text/html; charset=utf-8" http-equiv="Content-Type"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="revised" content="2022-10-18 21:58:15"><title>Dashimo Test</title><script type="text/javascript">function show(obj) {
+    document.getElementById(obj).style.display = 'block';
+    document.getElementById("hide_" + obj).style.display = '';
+    document.getElementById("show_" + obj).style.display = 'none';
+    // depending on flex-direction hiding is a bit different
+    var topSectionDiv = document.getElementById(obj).parentNode
+    var flexDirection = window.getComputedStyle(topSectionDiv).getPropertyValue("flex-direction");
+    if (flexDirection == 'column') {
+        //console.log('flexDirection 1' + flexDirection)
+    } else{
+        document.getElementById(obj).parentNode.classList.add('sectionShow');
+        document.getElementById(obj).parentNode.classList.remove('sectionHide');
+        //console.log('flexDirection 2' + flexDirection)
+    }
+    // resize tables within section
+    try {
+        var table = document.getElementById(obj).querySelectorAll('table');
+        table.forEach(resizeTable)
+    } catch (e) {
+        console.log('No datatables available.');
+    }
+    // redraw calendars within section
+    try {
+        var calendar = document.getElementById(obj).querySelectorAll('div[id^="Calendar-"]');
+        calendar.forEach(redrawCalendar)
+    } catch (e) {
+        console.log('No calendars available.');
+    }
+}
+
+function hide(obj) {
+    document.getElementById(obj).style.display = 'none';
+    document.getElementById("hide_" + obj).style.display = 'none';
+    document.getElementById("show_" + obj).style.display = '';
+
+
+    var topSectionDiv = document.getElementById(obj).parentNode
+    var flexDirection = window.getComputedStyle(topSectionDiv).getPropertyValue("flex-direction");
+    if (flexDirection == 'column') {
+        //console.log('flexDirection 1' + flexDirection)
+    } else{
+        document.getElementById(obj).parentNode.classList.remove('sectionShow');
+        document.getElementById(obj).parentNode.classList.add('sectionHide');
+        //console.log('flexDirection 2' + flexDirection)
+    }
+}
+</script><style type="text/css">body {    font-family: 'Roboto Condensed', sans-serif;    font-size: 8pt;    margin: 0px;}input {    font-size: 8pt;}.main-section {    margin-top: 0px;}</style><style type="text/css">.defaultPanel {    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);    transition: 0.3s;    border-radius: 5px;    margin: 5px;}</style><style type="text/css">@media all and (-ms-high-contrast:active) {.defaultSection {    display: flex;}}.defaultSection {    flex-direction: column;    border: 1px solid #bbbbbb;    padding-bottom: 0px;    margin: 5px;    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);    transition: 0.3s;    border-radius: 5px;}.defaultSectionHead {    display: flex;    justify-content: center;    padding: 5px;    margin: 0px 0px 0px 0px;    font-weight: bold;    background-color: #00bfff;    color: #ffffff;}</style><style type="text/css">.sectionHide {    width: auto;    min-width: 1.4rem;}.sectionShow {    width: 100%;}</style><style type="text/css">.overflowHidden {    overflow: hidden;    overflow-x: hidden;    overflow-y: hidden;}.flexParent {    display: flex;    justify-content: space-between;}.flexParentInvisible {    display: flex;    justify-content: space-between;}.flexElement {    flex-basis: 100%;    max-width: 100%;}.flexPanel {    flex-basis: 100%;    max-width: 100%;}.flex-grid {    display: flex;}</style><style type="text/css">.flexElementBODmHQaJ {
+    flex-basis: 100%;
+}</style></head><body><div class="main-section"><div class="defaultSection overflowHidden " style="flex-basis:100%"><div class="defaultSectionHead"><div class="defaultSectionText"><a name="Test">Test </a>&nbsp;<a id="show_anchor-i7x2clo" href="javascript:void(0)" onclick="show('anchor-i7x2clo'); " style="display:none">(Show)</a><a id="hide_anchor-i7x2clo" href="javascript:void(0)" onclick="hide('anchor-i7x2clo'); ">(Hide)</a></div></div><div id="anchor-i7x2clo" name="anchor-i7x2clo" class="flexParent flexElement overflowHidden defaultSectionContent"><div id="anchor-i7x2clo" class="flexParent flexElement overflowHidden defaultSectionContent collapsable"><div class="flexElementBODmHQaJ overflowHidden"><div id="anchor-jg49tb0" class="flexPanel overflowHidden defaultPanel"></div></div></div></div></div></div><footer><script type="text/javascript">function isEmptyOrSpaces(str) {
+    return !str || str.trim() === '';
+}
+function dataTablesCheckCondition(condition, data) {
+    var columnName = condition['columnName'];
+    var reverseCondition = condition['reverseCondition'];
+    var columnId = condition['columnId'];
+    var operator = condition['operator'].toLowerCase();
+    if (condition['dataStore'].toLowerCase() != 'html') {
+        var columnExists = false;
+        // we need to find whether the column name exists or not, and to make sure we know the column name exact case (it's case sensitive) just in case user provided it wrong
+        Object.getOwnPropertyNames(data).forEach(
+            function (val) {
+                if (val.toLowerCase() == columnName.toLowerCase()) {
+                    columnName = val;
+                    columnExists = true;
+                    return
+                }
+            }
+        );
+        if (!columnExists) {
+            return false;
+        }
+        var columnValue = data[columnName];
+    } else {
+        // check if columnid is set - if it's not set it means the column doesn't exists so we dont' proceed
+        if (columnId == -1) {
+            return false;
+        }
+        var columnValue = data[columnId];
+    }
+    var conditionValue = condition['value'];
+
+    //console.log('before: ' + conditionValue + ' || ' + columnValue + ' type: ' + condition['type']);
+    if (condition['type'] == 'bool') {
+        columnValue = columnValue.toString().toLowerCase();
+        conditionValue = conditionValue.toString().toLowerCase();
+    } else if (condition['type'] == 'string') {
+        if (!condition['caseSensitive']) {
+            columnValue = columnValue.toString().toLowerCase();
+            conditionValue = conditionValue.toString().toLowerCase();
+        }
+    } else if (condition['type'] == 'number') {
+        if (Array.isArray(conditionValue)) {
+            // this will be used for between, betweenInclusive
+            // if its an array we need to make sure to convert conditionValue within an array
+            var conditionValueTemporary = [];
+
+            for (var i = 0; i < conditionValue.length; i++) {
+                //for (let value of conditionValue) {
+                if (!isEmptyOrSpaces(conditionValue[i].toString())) {
+                    conditionValueTemporary.push(Number(conditionValue[i]));
+                } else {
+                    conditionValueTemporary.push(undefined);
+                }
+            }
+            conditionValue = conditionValueTemporary;
+            if (!isEmptyOrSpaces(columnValue.toString())) {
+                columnValue = Number(columnValue);
+            } else {
+                columnValue = undefined;
+            }
+        } else {
+            // This logic is to get rid of empty string which is normally treated as 0
+            if (!isEmptyOrSpaces(conditionValue.toString())) {
+                conditionValue = Number(conditionValue);
+            } else {
+                conditionValue = undefined;
+            }
+            if (!isEmptyOrSpaces(columnValue.toString())) {
+                columnValue = Number(columnValue);
+            } else {
+                columnValue = undefined;
+            }
+        }
+    } else if (condition['type'] == 'date') {
+        if (Array.isArray(condition['valueDate'])) {
+            var conditionValueTemporary = [];
+            for (var i = 0; i < condition['valueDate'].length; i++) {
+                //for (let value of condition['valueDate']) {
+                var valueDate = condition['valueDate'][i];
+                conditionValueTemporary.push(new Date(valueDate.year, valueDate.month - 1, valueDate.day, valueDate.hours, valueDate.minutes, valueDate.seconds));
+            }
+            conditionValue = conditionValueTemporary;
+        } else {
+            // bring conditionValue to proper date
+            var valueDate = condition['valueDate'];
+            conditionValue = new Date(valueDate.year, valueDate.month - 1, valueDate.day, valueDate.hours, valueDate.minutes, valueDate.seconds);
+        }
+        // bring columnValue based on dateTimeFormat provided
+        var momentConversion = moment(columnValue, condition['dateTimeFormat']);
+        columnValue = new Date(momentConversion);
+    }
+
+    if (reverseCondition) {
+        var sideLeft = conditionValue;
+        var sideRight = columnValue;
+    } else {
+        var sideLeft = columnValue;
+        var sideRight = conditionValue;
+    }
+    //console.log('after: ' + conditionValue + ' || ' + columnValue);
+    if (operator == 'eq') {
+        if (sideLeft == sideRight) {
+            return true;
+        }
+    } else if (operator == 'ne') {
+        if (sideLeft != sideRight) {
+            return true;
+        }
+    } else if (operator == 'gt') {
+        if (sideLeft > sideRight) {
+            return true;
+        }
+    } else if (operator == 'lt') {
+        if (sideLeft < sideRight) {
+            return true;
+        }
+    } else if (operator == 'le') {
+        if (sideLeft <= sideRight) {
+            return true;
+        }
+    } else if (operator == 'ge') {
+        if (sideLeft >= sideRight) {
+            return true;
+        }
+    } else if (operator == 'in') {
+        if (sideRight.indexOf(sideLeft) != -1) {
+            return true;
+        }
+    } else if (operator == 'notin') {
+        if (sideRight.indexOf(sideLeft) == -1) {
+            return true;
+        }
+    } else if (operator == 'contains' || operator == 'like') {
+        //var compareValue = conditionValue.replace('*', '.*')
+        var regex = new RegExp(sideRight);
+        if (regex.test(sideLeft)) {
+            return true;
+        }
+    } else if (operator == 'notcontains' || operator == 'notlike') {
+        //var compareValue = conditionValue.replace('*', '.*')
+        var regex = new RegExp(sideRight)
+        if (!regex.test(sideLeft)) {
+            return true;
+        }
+    } else if (operator == 'betweeninclusive') {
+        if (Array.isArray(sideRight) && sideLeft >= sideRight[0] && sideLeft <= sideRight[1]) {
+            return true;
+        }
+    } else if (operator == 'between') {
+        if (Array.isArray(sideRight) && sideLeft > sideRight[0] && sideLeft < sideRight[1]) {
+            return true;
+        }
+    }
+    return false;
+}
+function dataTablesConditionalFormatting(row, data, conditionsContainer, highlightColumn, css, failCss) {
+    var conditionsMatch = [];
+    var found = false;
+    for (var i = 0; i < conditionsContainer.length; i++) {
+        var container = conditionsContainer[i];
+        for (var k = 0; k < container['conditions'].length; k++) {
+            var condition = container['conditions'][k];
+            conditionsMatch.push(
+                dataTablesCheckCondition(condition, data)
+            );
+        }
+        if (container['logic'] == 'AND') {
+            // if (conditionsMatch.every(value => value === true)) {
+            //     found = true;
+            // }
+
+            for (var a = 0; a < conditionsMatch.length; a++) {
+                if (conditionsMatch[a] !== true) {
+                    found = false;
+                    break;
+                } else {
+                    found = true;
+                }
+            }
+
+
+        } else if (container['logic'] == 'OR') {
+            //if (conditionsMatch.some(value => value === true)) {
+            //    found = true;
+            //}
+
+            for (var a = 0; a < conditionsMatch.length; a++) {
+                if (conditionsMatch[a] === true) {
+                    found = true;
+                    break;
+                }
+            }
+
+        } else if (container['logic'] == 'NONE') {
+            // if (conditionsMatch.every(value => value != true)) {
+            //    found = true;
+            //}
+
+            for (var a = 0; a < conditionsMatch.length; a++) {
+                if (conditionsMatch[a] !== false) {
+                    found = false;
+                    break;
+                } else {
+                    found = true;
+                }
+            }
+        }
+    }
+    if (found) {
+        if (highlightColumn == null) {
+            $('td', row).css(css);
+        } else {
+            for (var a = 0; a < highlightColumn.length; a++) {
+                var column = highlightColumn[a];
+                //for (let column of highlightColumn) {
+                $("td:eq(" + column + ")", row).css(css);
+
+                //if (data.Type == "group") {
+                //    $('td:eq(6)', row).html('<b>A</b>');
+                //}
+            }
+        }
+    } else {
+        if (failCss) {
+            if (highlightColumn == null) {
+                $('td', row).css(failCss);
+            } else {
+                for (var a = 0; a < highlightColumn.length; a++) {
+                    var column = highlightColumn[a];
+                    //for (let column of highlightColumn) {
+                    $("td:eq(" + column + ")", row).css(failCss);
+                }
+            }
+        }
+    }
+}</script> <script type="text/javascript">function redrawCalendar(calendar) {
+    //calendarTracker[calendar.id].changeView(calendarTracker[calendar.id].view.type);
+    calendarTracker[calendar.id].updateSize();
+    console.log('Fitting calendar with id ' + calendar.id);
+}
+function resizeTable(table) {
+    if (table.id) {
+        if ($.fn.DataTable.isDataTable("#" + table.id)) {
+            try {
+                $("#" + table.id).DataTable().columns.adjust().responsive.recalc();
+                console.log('Fitting table with id ' + table.id);
+            } catch (e) {
+                try {
+                    $("#" + table.id).DataTable().columns.adjust();
+                } catch (e) {
+                    console.log('Failed to fit table with id ' + table.id);
+                }
+            }
+        } else {
+            console.log('Skipping fitting table id ' + table.id);
+        }
+    }
+}
+function redrawDiagram(diagram) {
+    diagramTracker[diagram.id].fit();
+    console.log('Fitting diagram with id ' + diagram.id);
+}
+function redrawFixedHeaderFooter() {
+    if (typeof dataTablesFixedTracker !== 'undefined') {
+        var keys = Object.keys(dataTablesFixedTracker);
+        for (i in keys) {
+            try {
+                console.log('Fitting fixed footer/header for table with id ' + keys[i]);
+                var table = $("#" + keys[i]).DataTable();
+                table.fixedHeader.adjust();
+            } catch (e) {
+                console.log('Fitting fixed footer/header failed.');
+            }
+        }
+    }
+}
+function findObjectsToRedraw(id) {
+    // redrawTables
+    try {
+        var table = document.getElementById(id).querySelectorAll('table.dataTables'); //.querySelectorAll('table[id^="DT-"]');
+        table.forEach(resizeTable);
+    } catch (e) {
+        console.log('No datatables available.');
+    }
+    // redrawCalendar
+    try {
+        var calendar = document.getElementById(id).querySelectorAll('div.calendarFullCalendar');
+        calendar.forEach(redrawCalendar);
+    } catch (e) {
+        console.log('No calendars available.');
+    }
+    // redrawDiagram
+    try {
+        var diagram = document.getElementById(id).querySelectorAll('div.diagramObject');
+        diagram.forEach(redrawDiagram);
+    } catch (e) {
+        console.log('No diagrams available.');
+    }
+    // finds all tables with fixed headers and footers and forces them to check if they are visible or not and hide or show accordingly
+    try {
+        redrawFixedHeaderFooter();
+    } catch (e) {
+        console.log('No datatables fixed header/footer available.');
+    }
+}</script></footer></body></html>

@@ -16,9 +16,16 @@
 #######################################################################
 #region Parameters
 #######################################################################
+
+$absPath = Join-Path $PSScriptRoot "/Config.XML"
+
+[xml]$config = Get-Content -Path $absPath
+
+$finalpath = $config.Settings.Html.Savepath
+
 # Database info
-$script:dataSource = 'vax-vs051' # SQL Server name (and instance where applicable)
-$script:database = 'CM_sod' # ConfigMgr Database name
+$script:dataSource = $config.Settings.SQLserver.Name # SQL Server name (and instance where applicable)
+$script:database = $config.Settings.SQLserver.Database # ConfigMgr Database name
 
 # Reporting thresholds (percentages)
 <#
@@ -34,8 +41,8 @@ $Thresholds.Inventory.Good = 90
 $Thresholds.Inventory.Warning = 70
 
 # Siteconfiguration
-$sitecode = 'sod:'
-$siteserver = 'vax-vs051.sodra.com'
+$sitecode = $config.Settings.SiteServer.SiteCode
+$siteserver = $config.Settings.SiteServer.Name
 $StatusMessageTime = (Get-Date).AddDays(-2)
 # Number of Status messages to report
 $SMCount = 5
@@ -59,6 +66,9 @@ $email_noErrors = 'christian.damberg@trivselhus.se'
 $smtp = 'webmail.trivselhus.se'
 
 #endregion
+
+#Call myScript1 from myScript2
+invoke-expression -Command .\Get-MEMCMStatus_ADR.ps1
 
 #######################################################################
 #region Functions
@@ -306,9 +316,9 @@ th {
 
 .sectionheader:hover { color:red; }
 
-.grid { width:100% }
+.grid { width:600px }
 
-.enhancedhtml-dynamic-table { width:100% }
+.enhancedhtml-dynamic-table { width:600px }
 
 .red {
     color:red;
@@ -344,14 +354,29 @@ $HTMLpost = @"
 #region HTML 
 #######################################################################
 
-$params = @{'As'='Table';
+$params = @{'As'='list';
 'PreContent'="<h4>Disk & SQL status </h4>";
 'EvenRowCssClass'='even';
 'OddRowCssClass'='odd';
-'MakeTableDynamic'=$true;
+'MakeTableDynamic'=$false;
 'TableCssClass'='grid';}
 
 $html_Disk_SQL_Status = $data.Disksitesql | ConvertTo-EnhancedHTMLFragment @params -Properties status,'site system',"Object Type",Total,Free,%Free
+
+Dashboard -Name 'Dashimo Test' -FilePath $PSScriptRoot\Dashboard.html {
+  Tab -Name 'Forest' {
+      Section -Name 'Forest Information' -Invisible {
+          Section -Name 'Status SQL and Disk' {
+              Table -HideFooter -DataTable $data.DiskSiteSQL
+          }
+          Section -Name 'FSMO Roles' {
+              Table -HideFooter -DataTable $data.ADRStatus
+          }
+
+      }
+
+  }
+}
 
 
 #endregion
@@ -360,10 +385,11 @@ $html_Disk_SQL_Status = $data.Disksitesql | ConvertTo-EnhancedHTMLFragment @para
 #######################################################################
 
 $params = @{'CssStyleSheet'=$style;
-'Title'="Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver";
-'PreContent'="<h1>Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver</h1>";
-'HTMLFragments'=@($HTMLTop,$HTMLhead,$html_Disk_SQL_Status,$HTMLpost)}
-#ConvertTo-EnhancedHTML @params | Out-File -FilePath C:\Temp\test2.html
+#'Title'="Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver";
+#'PreContent'="<h1>Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver</h1>";
+#'HTMLFragments'=@($HTMLTop,$HTMLhead,$html_Disk_SQL_Status,$HTMLpost)}
+'HTMLFragments'=@($html_Disk_SQL_Status)}
+
 $html = ConvertTo-EnhancedHTML @params
 #endregion
 #########################################################
@@ -442,4 +468,8 @@ $Parameters=@{
 # Test, enable this row to generate html-page
 #######################################################################
 
-$html | Out-File -FilePath C:\Temp\DiskSQLStatus.html
+
+
+$html | Out-File -FilePath $finalpath\DiskSQLStatus.html
+
+

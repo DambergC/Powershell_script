@@ -16,9 +16,21 @@
 #######################################################################
 #region Parameters
 #######################################################################
+
+$absPath = Join-Path $PSScriptRoot "/Config.XML"
+
+[xml]$config = Get-Content -Path $absPath
+
+$absPathQuery = Join-Path $PSScriptRoot "/Query.XML"
+
+[xml]$Query = Get-Content -Path $absPathQuery
+
+$finalpath = $config.Settings.Html.Savepath
+
 # Database info
-$script:dataSource = 'vax-vs051' # SQL Server name (and instance where applicable)
-$script:database = 'CM_sod' # ConfigMgr Database name
+$script:dataSource = $config.Settings.SQLserver.Name # SQL Server name (and instance where applicable)
+$script:database = $config.Settings.SQLserver.Database # ConfigMgr Database name
+
 
 # Reporting thresholds (percentages)
 <#
@@ -34,8 +46,8 @@ $Thresholds.Inventory.Good = 90
 $Thresholds.Inventory.Warning = 70
 
 # Siteconfiguration
-$sitecode = 'sod:'
-$siteserver = 'vax-vs051.sodra.com'
+$sitecode = $config.Settings.SiteServer.SiteCode
+$siteserver = $config.Settings.SiteServer.Name
 $StatusMessageTime = (Get-Date).AddDays(-2)
 # Number of Status messages to report
 $SMCount = 5
@@ -171,25 +183,9 @@ $Data = @{}
 ###########################################
 #region QUERY - Overall status Site
 ###########################################
-$query ="Select
-SiteStatus.SiteCode, SiteInfo.SiteName, SiteStatus.Updated 'Time Stamp',
-Case SiteStatus.Status
-When 0 Then 'OK'
-When 1 Then 'Warning'
-When 2 Then 'Critical'
-Else ' '
-End AS 'Site Status',
-Case SiteInfo.Status
-When 1 Then 'Active'
-When 2 Then 'Pending'
-When 3 Then 'Failed'
-When 4 Then 'Deleted'
-When 5 Then 'Upgrade'
-Else ' '
-END AS 'Site State'
-From V_SummarizerSiteStatus SiteStatus Join v_Site SiteInfo on SiteStatus.SiteCode = SiteInfo.SiteCode
-Order By SiteCode" 
-$data.Sitestatus = Get-SQLData -Query $query
+
+
+$data.Sitestatus = Get-SQLData -Query $query.Settings.SiteStatus.Query
 
 #endregion
 
@@ -378,9 +374,9 @@ if ($data.Sitestatus.'Site Status' -eq 'Error')
 #######################################################################
 
 $params = @{'CssStyleSheet'=$style;
-'Title'="Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver";
-'PreContent'="<h1>Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver</h1>";
-'HTMLFragments'=@($HTMLTop,$HTMLhead,$html_SiteStatus,$HTMLpost)}
+#'Title'="Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver";
+#'PreContent'="<h1>Report for MEMCM Sitecode:$Sitecode SiteServer:$siteserver</h1>";
+'HTMLFragments'=@($html_SiteStatus)}
 #ConvertTo-EnhancedHTML @params | Out-File -FilePath C:\Temp\test2.html
 $html = ConvertTo-EnhancedHTML @params
 #endregion
@@ -458,4 +454,4 @@ $Parameters=@{
 # Test, enable this row to generate html-page
 #######################################################################
 
-$html | Out-File -FilePath C:\Temp\SiteStatus.html
+$html | Out-File -FilePath $finalpath\SiteStatus.html
