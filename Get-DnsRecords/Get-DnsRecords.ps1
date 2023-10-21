@@ -32,42 +32,45 @@ param ($List)
 $ListToCheck = Get-Content $list
 $Result = @()
 
-foreach ($item in $ListToCheck) 
+foreach ($item in $ListToCheck)
 {
-    $communication = Test-Connection $item -Count 1 -Quiet
-
-  if ($communication -eq $true)  
-        {
-        $GetDnsType = Resolve-DnsName $item
-        $DnsType = $GetDnsType.type
-       
-            if ($DnsType -eq 'A') 
-                {
-                    $data = Resolve-DnsName $item  -Type A
-                    $props = @{ 'Result'=$data.IPAddress
-                                'Data'=$data.Name
-                               }
-                }
-
-            else 
-                {
-                    $data = Resolve-DnsName $item                   
-                    $props = @{ 'Result'=$data.NameHost
-                                'Data'=$item
-                                }
-                }
-        $obj = New-Object -TypeName PSobject -Property $props
-        $Result += $obj
-        }
-
-       else 
-        {
-          $props = @{ 'Result'='No response'
-                      'Data'=$item
-        }
-          $obj = New-Object -TypeName PSobject -Property $props
-          $Result += $obj
-       } 
+	$communication = Test-Connection $item -Count 1 -Quiet
+	
+	if ($communication -eq $true)
+	{
+		$GetDnsType = Resolve-DnsName $item
+		$DnsType = $GetDnsType.type
+		
+		if ($DnsType -eq 'A')
+		{
+			$data = Resolve-DnsName $item -Type A
+			$props = @{
+				'Result' = $data.IPAddress
+				'Data'   = $data.Name
+			}
+		}
+		
+		else
+		{
+			$data = Resolve-DnsName $item
+			$props = @{
+				'Result' = $data.NameHost
+				'Data'   = $item
+			}
+		}
+		$obj = New-Object -TypeName PSobject -Property $props
+		$Result += $obj
+	}
+	
+	else
+	{
+		$props = @{
+			'Result' = 'No response'
+			'Data'   = $item
+		}
+		$obj = New-Object -TypeName PSobject -Property $props
+		$Result += $obj
+	}
 }
 
 $Result | Format-Table
